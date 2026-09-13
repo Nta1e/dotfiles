@@ -37,6 +37,9 @@ in
       h_cloud_token = {
         path = "${config.sops.defaultSymlinkPath}/h_cloud_token";
       };
+      kx_hcloud_kubeconfig = {
+        path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
+      };
     };
   };
   
