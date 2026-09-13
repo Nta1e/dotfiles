@@ -1,0 +1,10 @@
+keys:
+  - &host_ntaleshadik age15tv0nyyaydj4p404nzsh8j5ek0gn7cx9jql68c8dtvr2gdaagujqh26jrh
+  - &recovery age164q8e832ux6l0u0w2r0a06wj50s9jwrljue6hrtlgtyj43q7x3wsjastye
+
+creation_rules:
+  - path_regex: secrets.yaml$
+    key_groups:
+      - age:
+        - *host_ntaleshadik
+        - *recovery
