@@ -24,8 +24,14 @@
 
   homebrew = {
    enable = true;
-   casks = [];
-   brews = ["mole" "herdr"];
+   casks = [
+     "wezterm"
+     "claude-code"
+   ];
+   brews = [
+     "mole"
+     "herdr"
+    ];
    onActivation.cleanup = "zap";
   };
 

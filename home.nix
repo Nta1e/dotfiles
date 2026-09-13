@@ -220,14 +220,6 @@ in
     };
   };
 
-  programs.ghostty = {
-    package = pkgs.ghostty-bin;
-    enable = true;
-    settings = {
-      theme = "Gruvbox Dark Hard";
-    };
-  };
-
   programs.git = {
     enable = true;
     settings = {
@@ -302,6 +294,35 @@ in
     pgcli
     postgresql
 
+    nerd-fonts.hack
   ];
 
+
+  # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
+  home.file.".config/wezterm".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
+
+  home.file.".claude/CLAUDE.md".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  home.file.".codex/AGENTS.md".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+
+
+  # ~/.claude/settings.json = repo baseline + this machine's overrides
+  # (~/.claude/settings.machine.json, unmanaged). Claude Code writes to the
+  # merged file directly, so anything it changed is kept in .prev on overwrite.
+  home.activation.claudeSettings = lib.hm.dag.entryAfter ["linkGeneration"] ''
+    base=${dotfiles}/home/.claude/settings.json
+    machine=~/.claude/settings.machine.json
+    out=~/.claude/settings.json
+    mkdir -p ~/.claude
+    [ -f "$machine" ] || echo '{}' > "$machine"
+    merged=$(${pkgs.jq}/bin/jq -s -f ${dotfiles}/home/.claude/merge.jq "$base" "$machine")
+    if [ -f "$out" ] && ! [ -L "$out" ] && [ "$(cat "$out")" != "$merged" ]; then
+      cp "$out" "$out.prev"
+      echo "claude: settings.json overwritten; previous copy in $out.prev" >&2
+    fi
+    rm -f "$out"
+    printf '%s\n' "$merged" > "$out"
+  '';
 }
