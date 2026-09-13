@@ -8,7 +8,7 @@ in
   home.stateVersion = "22.05";
 
   sops = {
-    age.keyFile = "/Users/ntaleshadik/.config/sops/age/keys.txt";
+    age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
     defaultSopsFile = ./secrets.yaml;
 
@@ -39,6 +39,9 @@ in
       };
       kx_hcloud_kubeconfig = {
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
+      };
+      kube_config = {
+        path = "${config.home.homeDirectory}/.kube/config";
       };
     };
   };
