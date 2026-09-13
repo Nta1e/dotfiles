@@ -34,24 +34,22 @@ sops updatekeys secrets.yaml     # after changing .sops.yaml: re-tape envelopes
 
 ## New Mac
 
-1. Install Nix (official multi-user installer). Then:
-   ```
-   git clone <this repo> ~/dotfiles
-   cd ~/dotfiles
-   sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#main
-   ```
-   This generates a fresh age key for the machine and prints its `age1...`
-   public key. Secrets won't decrypt yet — no envelope for this key.
+```
+git clone <this repo> ~/dotfiles && cd ~/dotfiles && ./bootstrap.sh
+```
 
-2. Let the new Mac in. Add the printed `age1...` to `.sops.yaml` (both under
-   `keys:` and in the `key_groups`), then from something that can already open
-   the box — the old Mac, or the recovery key from my password manager:
-   ```
-   SOPS_AGE_KEY_FILE=/path/to/recovery.txt sops updatekeys secrets.yaml
-   ```
-   Commit, push, pull on the new Mac.
+It installs nix if missing, sets up this machine's age key, and runs the first
+switch. The key: either paste the recovery key from my password manager when
+asked (fastest), or let it generate a new one — it then prints the `age1...` and
+stops. Add that to `.sops.yaml`, then from something that can already open the
+box (old Mac, or `SOPS_AGE_KEY_FILE=recovery.txt`):
 
-3. `switch` again. New shell, `env | grep AWS_` should be populated.
+```
+sops updatekeys secrets.yaml
+```
+
+Commit, push, pull on the new Mac, re-run `./bootstrap.sh`. New shell,
+`env | grep AWS_` should be populated.
 
 If both the old Mac and the recovery key are gone, the box is gone: rotate every
 credential at the provider and start a new `secrets.yaml`.

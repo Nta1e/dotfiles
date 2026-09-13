@@ -298,15 +298,4 @@ in
 
   ];
 
-
-  # Each machine gets its own age key; add the printed pubkey to .sops.yaml and
-  # run `sops updatekeys secrets.yaml` from a machine that can already decrypt.
-  home.activation.sopsAgeKey = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    if [ ! -f ~/.config/sops/age/keys.txt ]; then
-      mkdir -p ~/.config/sops/age
-      ${pkgs.age}/bin/age-keygen -o ~/.config/sops/age/keys.txt
-      echo "New age key generated. Add this recipient to .sops.yaml:" >&2
-      ${pkgs.age}/bin/age-keygen -y ~/.config/sops/age/keys.txt >&2
-    fi
-  '';
 }
