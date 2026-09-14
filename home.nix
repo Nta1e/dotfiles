@@ -197,7 +197,7 @@ in
       "!.gitignore"
     ];
     settings = {
-      theme = "gruvbox_dark_hard";
+      theme = "rose_pine_moon";
       editor = {
         line-number = "relative";
         lsp.display-messages = true;
@@ -205,8 +205,8 @@ in
       keys.normal = {
         space.space = "file_picker";
         space.q = ":q";
+        esc = [ "normal_mode" ":write" ];
       };
-      keys.insert.esc = [ "normal_mode" ":write" ];
     };
   };
   
