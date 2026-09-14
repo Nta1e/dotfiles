@@ -206,6 +206,7 @@ in
         space.space = "file_picker";
         space.q = ":q";
       };
+      keys.insert.esc = [ "normal_mode" ":write" ];
     };
   };
   
