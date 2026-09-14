@@ -24,7 +24,8 @@ over an obvious one. Match the file's existing comment density.
 
 Short and to the point, gitmoji-prefixed. A concise subject line; add a body
 only when it genuinely needs explaining, and keep it terse. No wordy
-multi-paragraph essays.
+multi-paragraph essays. NEVER add any agent trailers or footers: no
+Co-Authored-By, no Claude-Session, no "Generated with" lines. Just the message.
 
 # Auto-approved safe commands
 
