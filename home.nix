@@ -52,6 +52,9 @@ in
       h_cloud_token = {
         path = "${config.sops.defaultSymlinkPath}/h_cloud_token";
       };
+      figma_token = {
+        path = "${config.sops.defaultSymlinkPath}/figma_token";
+      };
       kx_hcloud_kubeconfig = {
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
       };
@@ -80,7 +83,7 @@ in
     };
     initContent = lib.mkOrder 1500 ''
       export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
-      export PATH="$HOME/.local/bin:$PATH"
+      export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
       export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
       export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml:$HOME/.kube/config"
 
@@ -92,6 +95,7 @@ in
       export SPACES_ACCESS_KEY_ID=$(cat ${config.sops.secrets.spaces_access_key_id.path})
       export SPACES_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.spaces_secret_access_key.path})
       export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
+      export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
       export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
 
       export _ZO_DOCTOR=0
@@ -228,6 +232,9 @@ in
 
   programs.direnv.nix-direnv.enable = true;
 
+  # npm's default global prefix is the read-only nix store
+  home.file.".npmrc".text = "prefix=${config.home.homeDirectory}/.npm-global\n";
+
   launchd.agents.weekly-cleanup = {
     enable = true;
     config = {
@@ -310,6 +317,7 @@ in
     docker-buildx
     colima
   
+    nodejs
     yq
     uv
     nixd
