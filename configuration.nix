@@ -24,9 +24,13 @@
 
   homebrew = {
    enable = true;
+   taps = [
+     "my-monkeys/tap"
+   ];
    casks = [
      "wezterm"
      "claude-code"
+     "my-monkeys/tap/opensuperwhisper"
    ];
    brews = [
      "mole"

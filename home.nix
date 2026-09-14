@@ -1,6 +1,21 @@
 { pkgs, lib, config, sqlit, ... }:
 let
   dotfiles = "${config.home.homeDirectory}/dotfiles";
+
+  # Docker: dangling images, stopped containers, build cache, anonymous volumes
+  # (named volumes kept; skipped if colima is down). Then `mo clean`, which
+  # prompts for sudo from a terminal but stays user-level under launchd.
+  cleanup = pkgs.writeShellScript "cleanup" ''
+    export PATH="/opt/homebrew/bin:/etc/profiles/per-user/${config.home.username}/bin:/run/current-system/sw/bin:/usr/bin:/bin"
+    export DOCKER_HOST="unix://${config.home.homeDirectory}/.colima/default/docker.sock"
+    echo "== $(date)"
+    if [ -S "${config.home.homeDirectory}/.colima/default/docker.sock" ]; then
+      ${pkgs.docker}/bin/docker system prune -f --volumes
+    else
+      echo "colima not running, skipping docker prune"
+    fi
+    mo clean
+  '';
 in
 {
   home.username = "ntaleshadik";
@@ -206,11 +221,22 @@ in
     cat = "bat";
     gc = "gitmoji commit";
     k = "kubecolor";
-    switch = "sudo darwin-rebuild switch --flake ${dotfiles}#main";
+    switch = "sudo darwin-rebuild switch --flake ${dotfiles}#main && sudo nix-collect-garbage --delete-older-than 7d";
     rshell = "source ~/.zshrc";
+    cleanup = toString cleanup;
   };
 
   programs.direnv.nix-direnv.enable = true;
+
+  launchd.agents.weekly-cleanup = {
+    enable = true;
+    config = {
+      ProgramArguments = [ (toString cleanup) ];
+      StartCalendarInterval = [ { Weekday = 0; Hour = 10; Minute = 0; } ];
+      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/weekly-cleanup.log";
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/weekly-cleanup.log";
+    };
+  };
 
   programs.btop = {
     enable = true;
