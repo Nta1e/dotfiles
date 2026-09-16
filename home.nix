@@ -1,4 +1,4 @@
-{ pkgs, lib, config, inputs, ... }:
+{ pkgs, lib, config, inputs, server, ... }:
 let
   dotfiles = "${config.home.homeDirectory}/dotfiles";
   system = pkgs.stdenv.hostPlatform.system;
@@ -331,8 +331,6 @@ in
     age
     sops
 
-    inputs.sqlit.packages.${system}.default
-
     docker
     docker-compose
     docker-buildx
@@ -347,15 +345,18 @@ in
 
     # Agents and agent tooling
     rtk
-    pi-coding-agent
+    (pkgs.callPackage ./pkgs/pi { })
     figma-axi
-    inputs.treehouse.packages.${system}.default
+    (pkgs.callPackage "${inputs.treehouse}/package.nix" { })
     jq
 
     pgcli
     postgresql
 
     nerd-fonts.hack
+  ] ++ lib.optionals (!server) [
+    # Heavy, uncached python/arrow build on x86_64-darwin; not needed headless
+    inputs.sqlit.packages.${system}.default
   ];
 
 

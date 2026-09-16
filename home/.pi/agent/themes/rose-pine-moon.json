@@ -1,137 +1,92 @@
-const DEFAULT_TITLE = "π";
-const PREFIX = "π";
-const MAX_TITLE_LENGTH = 40;
-const SPINNER_INTERVAL_MS = 120;
-const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+{
+	"$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+	"name": "rose-pine-moon",
+	"vars": {
+		"base": "#232136",
+		"surface": "#2a273f",
+		"overlay": "#393552",
+		"muted": "#6e6a86",
+		"subtle": "#908caa",
+		"text": "#e0def4",
+		"love": "#eb6f92",
+		"gold": "#f6c177",
+		"rose": "#ea9a97",
+		"pine": "#3e8fb0",
+		"foam": "#9ccfd8",
+		"iris": "#c4a7e7",
+		"highlightLow": "#2a283e",
+		"highlightMed": "#44415a",
+		"highlightHigh": "#56526e",
+		"toolSuccessBg": "#26303a",
+		"toolErrorBg": "#3a2837"
+	},
+	"colors": {
+		"accent": "iris",
+		"border": "pine",
+		"borderAccent": "foam",
+		"borderMuted": "highlightHigh",
+		"success": "foam",
+		"error": "love",
+		"warning": "gold",
+		"muted": "subtle",
+		"dim": "muted",
+		"text": "text",
+		"thinkingText": "subtle",
 
-function truncateTitle(title) {
-  if (title.length <= MAX_TITLE_LENGTH) return title;
-  return title.slice(0, MAX_TITLE_LENGTH - 3) + "...";
-}
+		"selectedBg": "highlightMed",
+		"scrollbarTrack": "highlightLow",
+		"scrollbarThumb": "subtle",
+		"searchMatchBg": "highlightMed",
+		"searchMatchText": "text",
+		"userMessageBg": "surface",
+		"userMessageText": "text",
+		"customMessageBg": "overlay",
+		"customMessageText": "text",
+		"customMessageLabel": "iris",
+		"toolPendingBg": "surface",
+		"toolSuccessBg": "toolSuccessBg",
+		"toolErrorBg": "toolErrorBg",
+		"toolTitle": "text",
+		"toolOutput": "subtle",
 
-function basename(path) {
-  if (!path) return DEFAULT_TITLE;
+		"mdHeading": "gold",
+		"mdLink": "foam",
+		"mdLinkUrl": "muted",
+		"mdCode": "rose",
+		"mdCodeBlock": "foam",
+		"mdCodeBlockBorder": "highlightHigh",
+		"mdQuote": "subtle",
+		"mdQuoteBorder": "highlightHigh",
+		"mdHr": "highlightHigh",
+		"mdListBullet": "iris",
 
-  const trimmed = path.replace(/[\\/]+$/, "");
-  if (!trimmed) return DEFAULT_TITLE;
+		"toolDiffAdded": "foam",
+		"toolDiffRemoved": "love",
+		"toolDiffContext": "subtle",
 
-  return trimmed.split(/[\\/]/).pop() || DEFAULT_TITLE;
-}
+		"syntaxComment": "muted",
+		"syntaxKeyword": "pine",
+		"syntaxFunction": "rose",
+		"syntaxVariable": "text",
+		"syntaxString": "gold",
+		"syntaxNumber": "gold",
+		"syntaxType": "foam",
+		"syntaxOperator": "subtle",
+		"syntaxPunctuation": "subtle",
 
-function getSessionName(pi) {
-  const name = pi.getSessionName?.();
-  return typeof name === "string" ? name.trim() : "";
-}
+		"thinkingOff": "highlightHigh",
+		"thinkingMinimal": "muted",
+		"thinkingLow": "subtle",
+		"thinkingMedium": "foam",
+		"thinkingHigh": "iris",
+		"thinkingXhigh": "rose",
+		"thinkingMax": "love",
 
-function getRawTitle(pi, ctx) {
-  return getSessionName(pi) || basename(ctx.cwd);
-}
-
-function isSpinningStatus(status) {
-  return status === "working";
-}
-
-function statusIndicator(status, spinnerFrame) {
-  if (isSpinningStatus(status)) {
-    if (SPINNER_FRAMES.length === 0) return "◉";
-    return SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
-  }
-
-  if (status === "done") return "✓";
-  if (status === "error") return "✗";
-  return "○";
-}
-
-function formatTitle(pi, ctx, status, spinnerFrame) {
-  const rawTitle = getRawTitle(pi, ctx);
-  const suffix = rawTitle === DEFAULT_TITLE ? DEFAULT_TITLE : `${PREFIX} | ${truncateTitle(rawTitle)}`;
-
-  return `${statusIndicator(status, spinnerFrame)} | ${suffix}`;
-}
-
-export default function terminalStatusTitle(pi) {
-  let status = "idle";
-  let spinnerFrame = 0;
-  let spinnerInterval;
-  let deferredWrite;
-  let lastCtx;
-
-  function clearDeferredWrite() {
-    if (!deferredWrite) return;
-
-    clearTimeout(deferredWrite);
-    deferredWrite = undefined;
-  }
-
-  function writeTitle(ctx = lastCtx) {
-    if (!ctx?.hasUI) return;
-
-    lastCtx = ctx;
-    ctx.ui.setTitle(formatTitle(pi, ctx, status, spinnerFrame));
-  }
-
-  function stopSpinner() {
-    if (!spinnerInterval) return;
-
-    clearInterval(spinnerInterval);
-    spinnerInterval = undefined;
-    spinnerFrame = 0;
-  }
-
-  function startSpinner(ctx) {
-    if (!ctx?.hasUI || spinnerInterval) return;
-
-    spinnerFrame = 0;
-    spinnerInterval = setInterval(() => {
-      if (!isSpinningStatus(status)) {
-        stopSpinner();
-        return;
-      }
-
-      spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
-      writeTitle();
-    }, SPINNER_INTERVAL_MS);
-    spinnerInterval.unref?.();
-  }
-
-  function setStatus(nextStatus, ctx) {
-    clearDeferredWrite();
-    status = nextStatus;
-    lastCtx = ctx;
-
-    if (isSpinningStatus(status)) {
-      startSpinner(ctx);
-    } else {
-      stopSpinner();
-    }
-
-    writeTitle(ctx);
-  }
-
-  function scheduleWrite(ctx) {
-    clearDeferredWrite();
-    deferredWrite = setTimeout(() => {
-      deferredWrite = undefined;
-      writeTitle(ctx);
-    }, 0);
-    deferredWrite.unref?.();
-  }
-
-  pi.on("session_start", async (_event, ctx) => {
-    setStatus("idle", ctx);
-    scheduleWrite(ctx);
-  });
-
-  pi.on("agent_start", async (_event, ctx) => {
-    setStatus("working", ctx);
-  });
-
-  pi.on("agent_settled", async (_event, ctx) => {
-    setStatus("done", ctx);
-  });
-
-  pi.on("session_shutdown", async () => {
-    clearDeferredWrite();
-    stopSpinner();
-  });
+		"bashMode": "gold"
+	},
+	"export": {
+		"pageBg": "#232136",
+		"cardBg": "#2a273f",
+		"infoBg": "#393552"
+	}
 }

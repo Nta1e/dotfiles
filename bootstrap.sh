@@ -46,7 +46,7 @@ fi
 echo "==> switch"
 case "$(uname -m)" in
   arm64)  SYSTEM=aarch64-darwin ;;
-  x86_64) echo "nixpkgs no longer supports Intel macOS; run Linux on this machine instead" >&2; exit 1 ;;
+  x86_64) SYSTEM=x86_64-darwin ;;
   *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
 esac
 [ "$DIR" = "$HOME/dotfiles" ] || echo "    warning: repo is not at ~/dotfiles; the 'switch' alias expects it there"

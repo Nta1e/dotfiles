@@ -12,6 +12,13 @@
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
     home-manager.url = "github:nix-community/home-manager/master";
     sops-nix.url = "github:Mic92/sops-nix";
+    # nixpkgs-unstable dropped x86_64-darwin in 26.11. 26.05 is the last branch
+    # with it, so the Intel Mac gets the matching release branches (frozen, cached).
+    nixpkgs-intel.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+    nix-darwin-intel.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
+    nix-darwin-intel.inputs.nixpkgs.follows = "nixpkgs-intel";
+    home-manager-intel.url = "github:nix-community/home-manager/release-26.05";
+    home-manager-intel.inputs.nixpkgs.follows = "nixpkgs-intel";
     sqlit.url = "github:Maxteabag/sqlit";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     # Agent skills and CLIs: plain repos pinned in flake.lock (`nix flake update lavish-axi`)
@@ -20,7 +27,7 @@
     gh-axi = { url = "github:kunchenguid/gh-axi"; flake = false; };
     figma-axi = { url = "github:ardaatahan/figma-axi"; flake = false; };
     # firstmate's worktree provider
-    treehouse = { url = "github:kunchenguid/treehouse"; inputs.nixpkgs.follows = "nixpkgs"; };
+    treehouse = { url = "github:kunchenguid/treehouse"; flake = false; };
   };
 
   outputs = inputs@{ self, nix-darwin, nixpkgs,  nix-homebrew, home-manager, sops-nix, ... }:
@@ -28,7 +35,11 @@
     # One configuration per Mac architecture, named after the nix system so
     # `switch` and bootstrap.sh can pick it from `uname -m`:
     # $ darwin-rebuild build --flake .#aarch64-darwin
-    mkDarwin = system: nix-darwin.lib.darwinSystem {
+    mkDarwin = system: let
+      intel = system == "x86_64-darwin";
+      darwin = if intel then inputs.nix-darwin-intel else nix-darwin;
+      hm = if intel then inputs.home-manager-intel else home-manager;
+    in darwin.lib.darwinSystem {
       modules = [
         { nixpkgs.hostPlatform = system; }
         ./configuration.nix
@@ -45,12 +56,14 @@
 
           };
         })
-        home-manager.darwinModules.home-manager
+        hm.darwinModules.home-manager
         {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "backup";
-            home-manager.extraSpecialArgs = { inherit inputs; };
+            # The Intel Mac is the headless agent box; home.nix skips
+            # workstation-only tools there.
+            home-manager.extraSpecialArgs = { inherit inputs; server = intel; };
             home-manager.users.ntaleshadik = ./home.nix;
             users.users.ntaleshadik.home = "/Users/ntaleshadik";
             home-manager.sharedModules = [
@@ -61,8 +74,6 @@
     };
   in
   {
-    # x86_64-darwin is gone from nixpkgs-unstable (26.11); the last branch that
-    # has it, nixpkgs-26.05-darwin, is frozen. Intel Macs get Linux instead.
-    darwinConfigurations = nixpkgs.lib.genAttrs [ "aarch64-darwin" ] mkDarwin;
+    darwinConfigurations = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-darwin" ] mkDarwin;
   };
 }
