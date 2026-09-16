@@ -2,7 +2,8 @@
 
 ## Priorities
 - The Krunchix customer mobile app comes first: `Krunchix/krunchix`, path `frontend/apps/mobile` (Expo / React Native). When two tasks compete for attention, quota, or a crewmate slot, the mobile app wins. Register the monorepo as project `krunchix` with posture `no-mistakes-prod-only`.
-- Architecture, research, and product-design work goes to Fable at xhigh while Fable quota is present, otherwise to the latest Opus; `config/crew-dispatch.json` encodes this, keep it that way when curating rules.
+- Architecture, research, and product-design work goes to Fable at xhigh while Fable quota is present, otherwise to GPT-6 Astra or the latest Opus; `config/crew-dispatch.json` encodes this, keep it that way when curating rules.
+- Two subscriptions are available to the crew: Claude (claude harness) and ChatGPT via Codex (codex harness, ChatGPT login). Spread well-defined work onto Codex so Claude quota stays free for the hard tasks, and use Codex for anything that generates images.
 - Prefer quality, simplicity, robustness, and long-term maintainability over development cost when a crewmate has to choose.
 
 ## Working style
