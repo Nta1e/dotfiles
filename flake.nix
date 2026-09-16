@@ -2,8 +2,13 @@
   description = "Ntale's darwin system flake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/master";
+    # nixpkgs-unstable, not master: it is what Hydra builds, so packages come
+    # from the binary cache instead of compiling here.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
+    # Without this nix-darwin evaluates against its own nixpkgs pin and the
+    # input above only supplies `lib`.
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
     home-manager.url = "github:nix-community/home-manager/master";
     sops-nix.url = "github:Mic92/sops-nix";
@@ -14,6 +19,8 @@
     quota-axi = { url = "github:kunchenguid/quota-axi"; flake = false; };
     gh-axi = { url = "github:kunchenguid/gh-axi"; flake = false; };
     figma-axi = { url = "github:ardaatahan/figma-axi"; flake = false; };
+    # firstmate's worktree provider
+    treehouse = { url = "github:kunchenguid/treehouse"; inputs.nixpkgs.follows = "nixpkgs"; };
   };
 
   outputs = inputs@{ self, nix-darwin, nixpkgs,  nix-homebrew, home-manager, sops-nix, ... }:
@@ -54,6 +61,8 @@
     };
   in
   {
-    darwinConfigurations = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-darwin" ] mkDarwin;
+    # x86_64-darwin is gone from nixpkgs-unstable (26.11); the last branch that
+    # has it, nixpkgs-26.05-darwin, is frozen. Intel Macs get Linux instead.
+    darwinConfigurations = nixpkgs.lib.genAttrs [ "aarch64-darwin" ] mkDarwin;
   };
 }

@@ -349,6 +349,8 @@ in
     rtk
     pi-coding-agent
     figma-axi
+    inputs.treehouse.packages.${system}.default
+    jq
 
     pgcli
     postgresql
