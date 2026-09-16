@@ -355,7 +355,6 @@ in
     cocoapods
 
     # Agents and agent tooling
-    (pkgs.callPackage ./pkgs/herdr { })
     rtk
     (pkgs.callPackage ./pkgs/pi { })
     figma-axi
@@ -399,20 +398,6 @@ in
   home.file.".claude/skills/gh-axi".source = "${inputs.gh-axi}/skills/gh-axi";
   home.file.".claude/skills/figma-axi".source = "${inputs.figma-axi}/skills/figma-axi";
 
-
-  # herdr server up at login so remote attaches and Hermes find it without a
-  # terminal ever having been opened (the brew service did this before).
-  launchd.agents.herdr = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "${config.home.profileDirectory}/bin/herdr" "server" ];
-      RunAtLoad = true;
-      KeepAlive = true;
-      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
-      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
-      EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:${brewPrefix}/bin:/usr/local/bin:/usr/bin:/bin";
-    };
-  };
 
   # Seed the firstmate home (config/ and data/ are gitignored there and
   # firstmate curates them afterwards, so copy once rather than symlink).
