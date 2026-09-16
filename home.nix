@@ -239,6 +239,15 @@ in
       theme = "gruvbox-dark";
     };
   };
+  # Claude Code behaviour toggles, as env vars rather than ~/.claude/settings.json
+  # so Claude rewriting that file cannot regress them.
+  home.sessionVariables = {
+    CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
+    CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+    CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW = "500000";
+  };
+
   home.shellAliases = {
     cd = "z";
     g = "git";
