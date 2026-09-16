@@ -414,10 +414,16 @@ in
     };
   };
 
-  # Seed the firstmate home (config/ and data/ are gitignored there and
-  # firstmate curates them afterwards, so copy once rather than symlink).
+  # firstmate is a clone, not a package (the checkout is the agent home and
+  # updates itself via /updatefirstmate), so clone once if absent, then seed
+  # config/ and data/: gitignored there and curated by firstmate afterwards,
+  # hence copied once rather than symlinked.
   home.activation.firstmateSeed = lib.hm.dag.entryAfter ["writeBoundary"] ''
     fm=${config.home.homeDirectory}/workspace/firstmate
+    if [ ! -d "$fm/bin" ]; then
+      mkdir -p "$(dirname "$fm")"
+      ${pkgs.git}/bin/git clone --quiet https://github.com/kunchenguid/firstmate "$fm" || echo "firstmate: clone failed, seed skipped" >&2
+    fi
     if [ -d "$fm/bin" ]; then
       for f in $(cd ${dotfiles}/home/firstmate && find . -type f); do
         mkdir -p "$fm/$(dirname "$f")"
