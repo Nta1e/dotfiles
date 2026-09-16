@@ -243,9 +243,11 @@ in
   # so Claude rewriting that file cannot regress them.
   home.sessionVariables = {
     CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
-    CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
     CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
     CLAUDE_CODE_AUTO_COMPACT_WINDOW = "500000";
+  } // lib.optionalAttrs server {
+    # firstmate keeps its own memory (data/captain.md, data/learnings.md)
+    CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
   };
 
   home.shellAliases = {
