@@ -4,8 +4,13 @@ My personal, reproducible nix setup for this Mac: nix-darwin + home-manager +
 sops-nix. Clone it on a fresh machine, run one command, get the same system back.
 
 ```
-switch    # alias for: sudo darwin-rebuild switch --flake ~/dotfiles#main
+switch    # alias for: sudo darwin-rebuild switch --flake ~/dotfiles#<system>
 ```
+
+`<system>` is `aarch64-darwin` or `x86_64-darwin`; the alias bakes in the one
+it was built on, and `bootstrap.sh` picks it from `uname -m`. Both Intel and
+Apple Silicon Macs use the same config; the Homebrew prefix and Rosetta brew
+follow the architecture.
 
 Remember: flakes only see git-tracked files. `git add` new files before switching.
 

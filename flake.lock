@@ -17,6 +17,22 @@
         "type": "github"
       }
     },
+    "figma-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788132874,
+        "narHash": "sha256-eQZSNkIkTnwnppOOw04vYLP9yS/A2Whxt/DVENNWBi4=",
+        "owner": "ardaatahan",
+        "repo": "figma-axi",
+        "rev": "6e69034e355247c35776982c6b4decc3c98512b9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ardaatahan",
+        "repo": "figma-axi",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -32,6 +48,22 @@
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "gh-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789444912,
+        "narHash": "sha256-jSB982pA7rpx+9XT8JiFdEgbRS7dHzt5DcJ3qhpI6os=",
+        "owner": "kunchenguid",
+        "repo": "gh-axi",
+        "rev": "2bffd9a5b60ded64d6c9851683b27a480173a7ee",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kunchenguid",
+        "repo": "gh-axi",
         "type": "github"
       }
     },
@@ -53,6 +85,22 @@
         "owner": "nix-community",
         "ref": "master",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "lavish-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789541818,
+        "narHash": "sha256-JsekUPnnvsBUHs5rs1RqGawe0LlMpvZUB+BWIImzy5Y=",
+        "owner": "kunchenguid",
+        "repo": "lavish-axi",
+        "rev": "93eb9c08fd451fd0d44f6185b8babd50a4d4d709",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kunchenguid",
+        "repo": "lavish-axi",
         "type": "github"
       }
     },
@@ -157,12 +205,32 @@
         "type": "github"
       }
     },
+    "quota-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789531831,
+        "narHash": "sha256-3aCIoJ1Q9h37uJvOFGQBpugvVfaBbFpcdTA+IrShfCg=",
+        "owner": "kunchenguid",
+        "repo": "quota-axi",
+        "rev": "4b91f9e9064cbadddc079729f35799ef0a996225",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kunchenguid",
+        "repo": "quota-axi",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
+        "figma-axi": "figma-axi",
+        "gh-axi": "gh-axi",
         "home-manager": "home-manager",
+        "lavish-axi": "lavish-axi",
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs_2",
+        "quota-axi": "quota-axi",
         "sops-nix": "sops-nix",
         "sqlit": "sqlit"
       }

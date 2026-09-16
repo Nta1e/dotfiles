@@ -44,6 +44,11 @@ MSG
 fi
 
 echo "==> switch"
+case "$(uname -m)" in
+  arm64)  SYSTEM=aarch64-darwin ;;
+  x86_64) SYSTEM=x86_64-darwin ;;
+  *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+esac
 [ "$DIR" = "$HOME/dotfiles" ] || echo "    warning: repo is not at ~/dotfiles; the 'switch' alias expects it there"
 if [ -n "$(git -C "$DIR" ls-files --others --exclude-standard)" ]; then
   echo "    flakes ignore untracked files, staging them"
@@ -51,6 +56,6 @@ if [ -n "$(git -C "$DIR" ls-files --others --exclude-standard)" ]; then
 fi
 # sudo drops /nix from PATH, hence $NIX
 sudo "$NIX" --extra-experimental-features 'nix-command flakes' \
-  run nix-darwin/master#darwin-rebuild -- switch --flake "$DIR#main"
+  run nix-darwin/master#darwin-rebuild -- switch --flake "$DIR#$SYSTEM"
 
 echo "==> done. open a new shell."

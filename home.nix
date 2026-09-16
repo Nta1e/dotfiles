@@ -1,12 +1,22 @@
-{ pkgs, lib, config, sqlit, ... }:
+{ pkgs, lib, config, inputs, ... }:
 let
   dotfiles = "${config.home.homeDirectory}/dotfiles";
+  system = pkgs.stdenv.hostPlatform.system;
+  brewPrefix = if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew" else "/usr/local";
+
+  # figma-axi is not on npm (the other *-axi CLIs run via `npx -y` at call time)
+  figma-axi = pkgs.buildNpmPackage {
+    pname = "figma-axi";
+    version = "0.1.0";
+    src = inputs.figma-axi;
+    npmDepsHash = "sha256-epzVGLzeshgOiFKU3pMExF+xRFm6IlCa1pwgWm8v+mU=";
+  };
 
   # Docker: dangling images, stopped containers, build cache, anonymous volumes
   # (named volumes kept; skipped if colima is down). Then `mo clean`, which
   # prompts for sudo from a terminal but stays user-level under launchd.
   cleanup = pkgs.writeShellScript "cleanup" ''
-    export PATH="/opt/homebrew/bin:/etc/profiles/per-user/${config.home.username}/bin:/run/current-system/sw/bin:/usr/bin:/bin"
+    export PATH="${brewPrefix}/bin:/etc/profiles/per-user/${config.home.username}/bin:/run/current-system/sw/bin:/usr/bin:/bin"
     export DOCKER_HOST="unix://${config.home.homeDirectory}/.colima/default/docker.sock"
     echo "== $(date)"
     if [ -S "${config.home.homeDirectory}/.colima/default/docker.sock" ]; then
@@ -226,7 +236,7 @@ in
     cat = "bat";
     gc = "gitmoji commit";
     k = "kubecolor";
-    switch = "sudo darwin-rebuild switch --flake ${dotfiles}#main && sudo nix-collect-garbage --delete-older-than 7d";
+    switch = "sudo darwin-rebuild switch --flake ${dotfiles}#${system} && sudo nix-collect-garbage --delete-older-than 7d";
     rshell = "source ~/.zshrc";
     cleanup = toString cleanup;
   };
@@ -311,7 +321,7 @@ in
     age
     sops
 
-    sqlit.packages.${pkgs.system}.default
+    inputs.sqlit.packages.${system}.default
 
     docker
     docker-compose
@@ -325,7 +335,11 @@ in
     lefthook
     cocoapods
 
+    # Agents and agent tooling
     rtk
+    pi-coding-agent
+    figma-axi
+
     pgcli
     postgresql
 
@@ -337,10 +351,28 @@ in
   home.file.".config/wezterm".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
 
+
+  home.file.".pi/agent/themes".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/themes";
+  home.file.".pi/agent/extensions".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
+  home.file.".pi/agent/models.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
+  home.file.".pi/agent/settings.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
+
+
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+
+  # Claude Code skills, pinned through the flake inputs so every Mac runs the
+  # same version. Each is a directory holding SKILL.md.
+  home.file.".claude/skills/lavish".source = "${inputs.lavish-axi}/skills/lavish";
+  home.file.".claude/skills/quota-axi".source = "${inputs.quota-axi}/skills/quota-axi";
+  home.file.".claude/skills/gh-axi".source = "${inputs.gh-axi}/skills/gh-axi";
+  home.file.".claude/skills/figma-axi".source = "${inputs.figma-axi}/skills/figma-axi";
 
 
   # ~/.claude/settings.json = repo baseline + this machine's overrides
