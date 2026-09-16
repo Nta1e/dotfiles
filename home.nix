@@ -250,6 +250,8 @@ in
   # Claude Code behaviour toggles, as env vars rather than ~/.claude/settings.json
   # so Claude rewriting that file cannot regress them.
   home.sessionVariables = {
+    # unset LANG makes less (git's pager) print emoji as <F0><9F>.. escapes
+    LANG = "en_US.UTF-8";
     CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
     CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
     CLAUDE_CODE_AUTO_COMPACT_WINDOW = "500000";
