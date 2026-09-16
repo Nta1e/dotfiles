@@ -1,0 +1,6 @@
+# Only these ambient variables reach crewmates, scouts, and secondmates.
+# Claude login lives in the keychain, git uses the sops-provided key via
+# core.sshCommand, so workers need very little from the environment.
+GH_TOKEN
+FIGMA_TOKEN
+SSH_AUTH_SOCK

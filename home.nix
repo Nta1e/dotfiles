@@ -388,6 +388,18 @@ in
   home.file.".claude/skills/figma-axi".source = "${inputs.figma-axi}/skills/figma-axi";
 
 
+  # Seed the firstmate home (config/ and data/ are gitignored there and
+  # firstmate curates them afterwards, so copy once rather than symlink).
+  home.activation.firstmateSeed = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    fm=${config.home.homeDirectory}/workspace/firstmate
+    if [ -d "$fm/bin" ]; then
+      for f in $(cd ${dotfiles}/home/firstmate && find . -type f); do
+        mkdir -p "$fm/$(dirname "$f")"
+        [ -e "$fm/$f" ] || cp "${dotfiles}/home/firstmate/$f" "$fm/$f"
+      done
+    fi
+  '';
+
   # ~/.claude/settings.json = repo baseline + this machine's overrides
   # (~/.claude/settings.machine.json, unmanaged). Claude Code writes to the
   # merged file directly, so anything it changed is kept in .prev on overwrite.

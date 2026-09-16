@@ -1,0 +1,12 @@
+{
+  "tools": [
+    { "name": "herdr", "command": "herdr" },
+    { "name": "claude", "command": "claude" },
+    { "name": "pi", "command": "pi" },
+    { "name": "treehouse", "command": "treehouse" },
+    { "name": "no-mistakes", "command": "no-mistakes" },
+    { "name": "gh-axi", "command": "gh-axi" },
+    { "name": "quota-axi", "command": "quota-axi" },
+    { "name": "tasks-axi", "command": "tasks-axi" }
+  ]
+}
