@@ -6,12 +6,14 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 KEY=~/.config/sops/age/keys.txt
 
 echo "==> nix"
-if ! command -v nix >/dev/null; then
+# Test the binary, not PATH: the shell that ran the installer has no nix on
+# PATH until a new login shell, and re-running the installer wrecks /etc.
+NIX=/nix/var/nix/profiles/default/bin/nix
+if [ ! -x "$NIX" ]; then
   sh <(curl -L https://nixos.org/nix/install) --daemon --yes
-  # shellcheck disable=SC1091
-  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 fi
-NIX="$(command -v nix)"
+# shellcheck disable=SC1091
+. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 nix() { "$NIX" --extra-experimental-features 'nix-command flakes' "$@"; }
 
 # Same branches flake.nix pairs per architecture; the registry's `nixpkgs`
@@ -57,6 +59,10 @@ if [ -n "$(git -C "$DIR" ls-files --others --exclude-standard)" ]; then
   echo "    flakes ignore untracked files, staging them"
   git -C "$DIR" add -A
 fi
+# nix-darwin manages these; the installer's copies block first activation.
+for f in /etc/bashrc /etc/zshrc /etc/nix/nix.conf; do
+  if [ -f "$f" ] && [ ! -L "$f" ]; then sudo mv "$f" "$f.before-nix-darwin"; fi
+done
 # sudo drops /nix from PATH, hence $NIX
 sudo "$NIX" --extra-experimental-features 'nix-command flakes' \
   run "$DARWIN#darwin-rebuild" -- switch --flake "$DIR#$SYSTEM"
