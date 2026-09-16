@@ -65,6 +65,14 @@ in
       figma_token = {
         path = "${config.sops.defaultSymlinkPath}/figma_token";
       };
+      # Agent-only GitHub identity: fine-grained PAT for gh, dedicated key for git
+      github_token = {
+        path = "${config.sops.defaultSymlinkPath}/github_token";
+      };
+      github_ssh_key = {
+        path = "${config.home.homeDirectory}/.ssh/agents_ed25519";
+        mode = "0600";
+      };
       kx_hcloud_kubeconfig = {
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
       };
@@ -106,6 +114,7 @@ in
       export SPACES_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.spaces_secret_access_key.path})
       export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
       export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
+      export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
       export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
 
       export _ZO_DOCTOR=0
@@ -271,6 +280,7 @@ in
       user.email = "shadikntale@gmail.com";
       init.defaultBranch = "main";
       pull.rebase = true;
+      core.sshCommand = "ssh -i ${config.sops.secrets.github_ssh_key.path} -o IdentitiesOnly=yes";
     };
   };
 
