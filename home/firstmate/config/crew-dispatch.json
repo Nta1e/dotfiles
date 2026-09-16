@@ -3,55 +3,139 @@
     {
       "when": "Any work on the Krunchix customer mobile app: the Expo/React Native app under frontend/apps/mobile in the Krunchix/krunchix monorepo, including features, bug fixes, UI, navigation, offline behaviour, store/release work, and its shared packages when the change is for the mobile app.",
       "use": [
-        { "harness": "claude", "model": "fable", "effort": "xhigh" },
-        { "harness": "codex", "model": "gpt-6-astra", "effort": "xhigh" },
-        { "harness": "claude", "model": "opus", "effort": "high" }
+        {
+          "harness": "claude",
+          "model": "fable",
+          "effort": "xhigh"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-6-astra",
+          "effort": "xhigh"
+        },
+        {
+          "harness": "claude",
+          "model": "opus",
+          "effort": "high"
+        }
       ],
       "why": "Captain's standing rule (2026-09-16): the customer mobile app is the priority project; give it the strongest crewmate whose quota allows, Fable first, then GPT-6 Astra on the OpenAI subscription, then the latest Opus."
     },
     {
       "when": "The task is architecture, technical or product design, research, investigation, planning, a scout report, an audit, or any work that is genuinely open-ended and needs deep reasoning before code.",
       "use": [
-        { "harness": "claude", "model": "fable", "effort": "xhigh" },
-        { "harness": "codex", "model": "gpt-6-astra", "effort": "xhigh" },
-        { "harness": "claude", "model": "opus", "effort": "xhigh" }
+        {
+          "harness": "claude",
+          "model": "fable",
+          "effort": "xhigh"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-6-astra",
+          "effort": "xhigh"
+        },
+        {
+          "harness": "claude",
+          "model": "opus",
+          "effort": "xhigh"
+        }
       ],
       "why": "Captain's standing rule (2026-09-16): Fable for architecture and research when quota is present, otherwise GPT-6 Astra or the latest Opus at the same effort."
     },
     {
+      "when": "The task depends on fresh news, current events, live public facts, or recent market, library, or product changes where up-to-the-minute web context is central.",
+      "use": [
+        {
+          "harness": "pi",
+          "model": "xai/grok-4.5",
+          "effort": "high"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-6-astra",
+          "effort": "high"
+        }
+      ],
+      "why": "Grok has the freshest web context; it runs through Pi's xai provider and needs an xAI login in Pi. Falls back to GPT-6 Astra on Pi."
+    },
+    {
       "when": "The task requires GENERATING IMAGES: creating, rendering, or producing image files such as icons, illustrations, marketing assets, or app store artwork.",
-      "use": { "harness": "codex", "model": "gpt-5.6-sol", "effort": "high" },
-      "why": "Only the OpenAI models generate images; Codex with GPT-5.6 Sol handles image work."
+      "use": {
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "why": "Only the OpenAI models generate images, and image generation is a Codex CLI tool rather than a Pi one, so this is the single rule that keeps the codex harness; every other GPT or Grok profile runs through Pi."
     },
     {
       "when": "The task is a big or ambiguous multi-file feature, a risky refactor, or work that requires holding many moving parts in mind, outside the mobile app.",
       "use": [
-        { "harness": "claude", "model": "opus", "effort": "high" },
-        { "harness": "codex", "model": "gpt-6-astra", "effort": "high" },
-        { "harness": "claude", "model": "sonnet", "effort": "high" }
+        {
+          "harness": "claude",
+          "model": "opus",
+          "effort": "high"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-6-astra",
+          "effort": "high"
+        },
+        {
+          "harness": "claude",
+          "model": "sonnet",
+          "effort": "high"
+        }
       ],
       "why": "Strong coding profile for big work, spread across both subscriptions by quota."
     },
     {
       "when": "The task is a simple bug fix whose root cause and fix are already clear, a small well-defined change, a test addition, or a documentation update.",
       "use": [
-        { "harness": "codex", "model": "gpt-5.6-luna", "effort": "high" },
-        { "harness": "claude", "model": "sonnet", "effort": "high" }
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-5.6-luna",
+          "effort": "high"
+        },
+        {
+          "harness": "claude",
+          "model": "sonnet",
+          "effort": "high"
+        }
       ],
       "why": "Use more efficient models for well defined work; Luna keeps Claude quota free for the hard tasks."
     },
     {
       "when": "The task is a trivial mechanical edit such as a rote rename, formatting sweep, targeted typo fix, dependency bump with green CI, or simple file gathering.",
       "use": [
-        { "harness": "codex", "model": "gpt-5.6-luna", "effort": "medium" },
-        { "harness": "claude", "model": "haiku", "effort": "low" }
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-5.6-luna",
+          "effort": "medium"
+        },
+        {
+          "harness": "claude",
+          "model": "haiku",
+          "effort": "low"
+        }
       ],
       "why": "Cheapest fast profile when the task is narrow and low ambiguity."
     }
   ],
   "default": [
-    { "harness": "claude", "model": "opus", "effort": "high" },
-    { "harness": "codex", "model": "gpt-5.6-terra", "effort": "high" },
-    { "harness": "claude", "model": "sonnet", "effort": "high" }
+    {
+      "harness": "claude",
+      "model": "opus",
+      "effort": "high"
+    },
+    {
+      "harness": "pi",
+      "model": "openai-codex/gpt-5.6-terra",
+      "effort": "high"
+    },
+    {
+      "harness": "claude",
+      "model": "sonnet",
+      "effort": "high"
+    }
   ]
 }
