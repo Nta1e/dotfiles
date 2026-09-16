@@ -73,6 +73,11 @@ in
         path = "${config.home.homeDirectory}/.ssh/agents_ed25519";
         mode = "0600";
       };
+      # `claude setup-token`: long-lived, used headless on the server instead of
+      # the Keychain login so the agents never wait on a relogin
+      claude_oauth_token = {
+        path = "${config.sops.defaultSymlinkPath}/claude_oauth_token";
+      };
       kx_hcloud_kubeconfig = {
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
       };
@@ -99,7 +104,7 @@ in
     syntaxHighlighting = {
       enable = true;
     };
-    initContent = lib.mkOrder 1500 ''
+    initContent = lib.mkOrder 1500 (''
       export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
       export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
       export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
@@ -115,10 +120,13 @@ in
       export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
       export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
       export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
+    '' + lib.optionalString server ''
+      export CLAUDE_CODE_OAUTH_TOKEN=$(cat ${config.sops.secrets.claude_oauth_token.path})
+    '' + ''
       export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
 
       export _ZO_DOCTOR=0
-    '';
+    '');
   };
 
   programs.starship = {
