@@ -1,5 +1,5 @@
-# herdr from its release binaries: Homebrew has no bottle for the Intel Mac's
-# macOS (Tier 3) and nixpkgs-26.05 has no herdr for x86_64-darwin.
+# herdr from its release binaries: Homebrew has no Intel bottle for it and
+# nixpkgs-26.05 has no herdr for x86_64-darwin.
 # Bump: version + hashes from `nix-prefetch-url <url>` (nix hash convert --to sri).
 { lib, stdenvNoCC, fetchurl }:
 

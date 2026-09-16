@@ -33,10 +33,11 @@
      "tailscale-app"
      "my-monkeys/tap/opensuperwhisper"
    ];
-   # herdr comes from pkgs/herdr; brew has no bottles for the Intel Mac's macOS
-   brews = [
+   # herdr comes from pkgs/herdr: Homebrew ships no Intel bottle for it, and
+   # neither for mole, which the server does not need anyway.
+   brews = lib.optionals pkgs.stdenv.hostPlatform.isAarch64 [
      "mole"
-    ];
+   ];
    onActivation.cleanup = "zap";
   };
 
