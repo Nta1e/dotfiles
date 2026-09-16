@@ -64,6 +64,13 @@
       done
       '';
  
+  # Remote Login: keys only. Make sure `ssh <host>` works without a password
+  # before switching this in, or the next login needs the screen.
+  environment.etc."ssh/sshd_config.d/200-keys-only.conf".text = ''
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+  '';
+
   # Add ability to used TouchID for sudo authentication
   security.pam.services.sudo_local.touchIdAuth = true;
   security.pam.services.sudo_local.reattach = true;
