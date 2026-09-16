@@ -30,6 +30,7 @@
    casks = [
      "wezterm"
      "claude-code"
+     "tailscale-app"
      "my-monkeys/tap/opensuperwhisper"
    ];
    brews = [
