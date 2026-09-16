@@ -412,10 +412,19 @@ in
 
   # herdr server up at login so remote attaches and Hermes find it without a
   # terminal ever having been opened (the brew service did this before).
+  # `herdr machine add` only accepts a server that is its own session leader
+  # (getsid == getpid); launchd does not do that, so setsid it and forward
+  # TERM so launchd can still stop it.
   launchd.agents.herdr = {
     enable = true;
     config = {
-      ProgramArguments = [ "${config.home.profileDirectory}/bin/herdr" "server" ];
+      ProgramArguments = [
+        (toString (pkgs.writeShellScript "herdr-server" ''
+          ${pkgs.util-linux}/bin/setsid ${config.home.profileDirectory}/bin/herdr server &
+          trap 'kill -TERM $!' TERM INT
+          wait
+        ''))
+      ];
       RunAtLoad = true;
       KeepAlive = true;
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
