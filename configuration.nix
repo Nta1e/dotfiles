@@ -33,9 +33,9 @@
      "tailscale-app"
      "my-monkeys/tap/opensuperwhisper"
    ];
+   # herdr comes from pkgs/herdr; brew has no bottles for the Intel Mac's macOS
    brews = [
      "mole"
-     "herdr"
     ];
    onActivation.cleanup = "zap";
   };
