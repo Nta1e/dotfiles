@@ -7,7 +7,7 @@ let
   # Shared by zsh and bash login shells.
   shellExports = ''
     export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
-    export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
+    export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/workspace/odoo/tools/kx:$PATH"
     export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
     export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml"
 
@@ -40,15 +40,33 @@ let
   # and uid ownership. home/hermes is bind-mounted as a directory (a single-file
   # mount pins the inode and goes stale when git pull replaces the file);
   # seed.sh symlinks /opt/data/SOUL.md into it.
+  #
+  # Two gateways, one image and volume: the default profile is the Telegram
+  # liaison, the `ops` profile (HERMES_HOME=/opt/data/profiles/ops) is the
+  # Mattermost front door. Each container only sees its own platform's env,
+  # so neither profile double-binds the other's bot.
+  hermesVolumes = [
+    "hermes-data:/opt/data"
+    "${dotfiles}/home/hermes:/opt/dotfiles-hermes:ro"
+  ];
   hermesCompose = pkgs.writeText "hermes-compose.yaml" (builtins.toJSON {
     services.hermes = {
       image = "nousresearch/hermes-agent";
       container_name = "hermes";
       command = [ "gateway" "run" ];
       env_file = [ "${config.home.homeDirectory}/.hermes/env" ];
-      volumes = [
-        "hermes-data:/opt/data"
-        "${dotfiles}/home/hermes:/opt/dotfiles-hermes:ro"
+      volumes = hermesVolumes;
+    };
+    # Attachments the captains post land in the profile's document cache;
+    # that cache is a symlink (seed.sh) to this host directory so `kx` on the
+    # host can read the PDF the agent was handed.
+    services.hermes-ops = {
+      image = "nousresearch/hermes-agent";
+      container_name = "hermes-ops";
+      command = [ "-p" "ops" "gateway" "run" ];
+      env_file = [ "${config.home.homeDirectory}/.hermes/env-ops" ];
+      volumes = hermesVolumes ++ [
+        "${config.home.homeDirectory}/.hermes/ops-documents:/opt/host-documents"
       ];
     };
     volumes.hermes-data = { };
@@ -127,6 +145,9 @@ in
       telegram_bot_token = { };
       telegram_allowed_users = { };
       hermes_ssh_key = { };
+      # Mattermost front door (`ops` profile); see home/hermes/ops/README.md
+      mattermost_bot_token = { };
+      mattermost_ops_users = { };
     };
   } // lib.optionalAttrs server {
     # Read host-side by docker-compose (env_file), so the container never
@@ -142,6 +163,22 @@ in
         TERMINAL_SSH_USER=${config.home.username}
         TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
         HERMES_LOCAL_STT_COMMAND=/opt/dotfiles-hermes/stt-host.sh {input_path} {output_dir}
+      '';
+    };
+    # Thread mode: every reply nests under the post that asked. Channels need
+    # an @mention; DMs never do.
+    templates."hermes-ops.env" = {
+      path = "${config.home.homeDirectory}/.hermes/env-ops";
+      content = ''
+        MATTERMOST_URL=https://chat.krunchix.cafe
+        MATTERMOST_TOKEN=${config.sops.placeholder.mattermost_bot_token}
+        MATTERMOST_ALLOWED_USERS=${config.sops.placeholder.mattermost_ops_users}
+        MATTERMOST_REPLY_MODE=thread
+        MATTERMOST_REQUIRE_MENTION=true
+        ANTHROPIC_TOKEN=${config.sops.placeholder.claude_oauth_token}
+        TERMINAL_SSH_HOST=host.docker.internal
+        TERMINAL_SSH_USER=${config.home.username}
+        TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
       '';
     };
   };
@@ -420,6 +457,7 @@ in
 
     pgcli
     postgresql
+    poppler-utils # pdftotext, for `kx equity import`
 
     nerd-fonts.hack
   ] ++ lib.optionals (!server) [
@@ -543,6 +581,13 @@ in
       done
     fi
   '';
+
+  # World-writable: the container's `hermes` uid is not ours on the virtiofs
+  # mount, and the only thing in here is chat attachments.
+  home.activation.hermesOpsDocuments = lib.mkIf server (lib.hm.dag.entryAfter ["writeBoundary"] ''
+    mkdir -p ${config.home.homeDirectory}/.hermes/ops-documents
+    chmod 777 ${config.home.homeDirectory}/.hermes/ops-documents
+  '');
 
   # ~/.claude/settings.json = repo baseline + this machine's overrides
   # (~/.claude/settings.machine.json, unmanaged). Claude Code writes to the

@@ -30,6 +30,8 @@ tail -f ~/Library/Logs/hermes.log
 
 Voice notes are transcribed on the host by `hermes-stt` (whisper.cpp, large-v3-turbo) via `stt-host.sh`.
 
+The Mattermost bot for the directors is a second profile in the same setup: see `ops/README.md`.
+
 Then DM the bot. Change the model any time with `docker exec hermes hermes config set model.default <id>`
 or `/model` in chat. Update: `docker-compose -f <compose> pull` then
 `launchctl kickstart -k gui/$(id -u)/org.nix-community.home.hermes`.

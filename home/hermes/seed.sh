@@ -26,6 +26,23 @@ run hermes config set model.default claude-haiku-4-5
 # a lost agent stops after this many tool calls instead of the default 500
 run hermes config set agent.max_turns 30
 
-echo "==> restart gateway"
+echo "==> ops profile (Mattermost)"
+# `-p ops` needs the profile dir; create it once, then run every ops command
+# through the hermes-ops service so HERMES_HOME and the env are the profile's.
+run sh -c 'hermes profile list 2>/dev/null | grep -q "^ *ops\b" || hermes profile create --no-alias ops'
+ops() { docker-compose -f "$composefile" run --rm -T --entrypoint "$1" hermes-ops "${@:2}"; }
+ops sh -c 'ln -sfn /opt/dotfiles-hermes/ops/SOUL.md /opt/data/profiles/ops/SOUL.md'
+# Attachments: the profile's document cache points at the host-mounted dir,
+# so a PDF a captain posts is readable by kx on the host (~/.hermes/ops-documents).
+ops sh -c 'mkdir -p /opt/data/profiles/ops/cache && rm -rf /opt/data/profiles/ops/cache/documents && ln -sfn /opt/host-documents /opt/data/profiles/ops/cache/documents'
+ops hermes -p ops config set terminal.backend ssh
+ops hermes -p ops config set model.provider anthropic
+# Sonnet for the money work; the Telegram liaison stays on Haiku.
+ops hermes -p ops config set model.default claude-sonnet-5
+ops hermes -p ops config set agent.max_turns 40
+# --entrypoint runs as root; the gateway runs as `hermes`
+ops sh -c 'chown -R hermes:hermes /opt/data/profiles/ops'
+
+echo "==> restart gateways"
 launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.hermes"
 echo "done; tail -f ~/Library/Logs/hermes.log"
