@@ -40,8 +40,9 @@ ops hermes -p ops config set model.provider anthropic
 # Sonnet for the money work; the Telegram liaison stays on Haiku.
 ops hermes -p ops config set model.default claude-sonnet-5
 ops hermes -p ops config set agent.max_turns 40
-# --entrypoint runs as root; the gateway runs as `hermes`
-ops sh -c 'chown -R hermes:hermes /opt/data/profiles/ops'
+# --entrypoint runs as root; the gateway runs as `hermes` (skills/ too: the
+# image copies its bundled skills there at boot and warns if it cannot)
+ops sh -c 'chown -R hermes:hermes /opt/data/profiles /opt/data/skills'
 
 echo "==> restart gateways"
 launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.hermes"
