@@ -9,15 +9,12 @@ let
     export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
     export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
     export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-    export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml:$HOME/.kube/config"
+    export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml"
 
     export B2_APPLICATION_KEY_ID=$(cat ${config.sops.secrets.b2_application_key_id.path})
     export B2_APPLICATION_KEY=$(cat ${config.sops.secrets.b2_application_key.path})
     export AWS_ACCESS_KEY_ID=$(cat ${config.sops.secrets.aws_access_key_id.path})
     export AWS_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.aws_secret_access_key.path})
-    export DIGITALOCEAN_TOKEN=$(cat ${config.sops.secrets.digitalocean_token.path})
-    export SPACES_ACCESS_KEY_ID=$(cat ${config.sops.secrets.spaces_access_key_id.path})
-    export SPACES_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.spaces_secret_access_key.path})
     export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
     export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
     export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
@@ -89,15 +86,6 @@ in
       aws_secret_access_key = {
         path = "${config.sops.defaultSymlinkPath}/aws_secret_access_key";
       };
-      digitalocean_token = {
-        path = "${config.sops.defaultSymlinkPath}/digitalocean_token";
-      };
-      spaces_access_key_id = {
-        path = "${config.sops.defaultSymlinkPath}/spaces_access_key_id";
-      };
-      spaces_secret_access_key = {
-        path = "${config.sops.defaultSymlinkPath}/spaces_secret_access_key";
-      };
       h_cloud_token = {
         path = "${config.sops.defaultSymlinkPath}/h_cloud_token";
       };
@@ -119,9 +107,6 @@ in
       };
       kx_hcloud_kubeconfig = {
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
-      };
-      kube_config = {
-        path = "${config.home.homeDirectory}/.kube/config";
       };
     } // lib.optionalAttrs server {
       # Hermes gateway (Telegram -> firstmate); see home/hermes/README.md
@@ -394,7 +379,6 @@ in
     helm-ls
     kubie
     gitmoji-cli
-    doctl
     # Secrets management
     age
     sops

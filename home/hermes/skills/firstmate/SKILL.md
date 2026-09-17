@@ -35,8 +35,8 @@ line saying it was queued. Do not narrow or widen the request.
 ## 2. Read-only answers: the environment
 
 - Kubernetes: one cluster, **Hetzner** (`kx-hcloud`, context `admin@kx-hcloud`,
-  Talos). `kubectl` is already pointed at it. There is no DigitalOcean cluster
-  any more; if `kubectl` ever asks for doctl, `KUBECONFIG` is missing - say so.
+  Talos). `kubectl` is already pointed at it; if it errors about auth,
+  `KUBECONFIG` is missing from the shell - say so, do not go looking.
 - ArgoCD: `kubectl -n argocd get applications` (`-o wide` for sync/health and
   revision). Compare a revision against `git log` in the project repo under
   `~/workspace/<repo>` or `gh api repos/Krunchix/<repo>/commits/main`.
