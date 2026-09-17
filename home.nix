@@ -59,6 +59,8 @@ let
         "hermes-data:/opt/data"
         "${dotfiles}/home/hermes:/opt/dotfiles-hermes:ro"
         "${config.home.homeDirectory}/.hermes/ops-documents:/opt/host-documents"
+        # see home/hermes/patches/README.md
+        "${dotfiles}/home/hermes/patches/mattermost:/opt/hermes/plugins/platforms/mattermost:ro"
       ];
     };
     volumes.hermes-data = { };
