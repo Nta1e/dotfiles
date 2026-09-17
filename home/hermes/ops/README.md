@@ -14,10 +14,12 @@ never ad-hoc SQL, and the SOUL makes the bot dry-run and ask first.
 
 ## Secrets (sops secrets.yaml)
 
-- `mattermost_bot_token`: System Console -> Integrations -> Bot Accounts, a bot
-  with `post:all`; invite it to the channels it should answer in.
-- `mattermost_ops_users`: the two directors' user ids, comma-separated
-  (`GET /api/v4/users/username/<name>`).
+- `mattermost_bot_token`: the `mise` bot's token (the same one Odoo posts
+  with; it already sits in the channels that matter, and the gateway ignores
+  the bot's own posts, so Odoo's alerts never trigger it). Also read by
+  `kx mm dm` on the host from the sops secret file.
+- `mattermost_ops_users`: `54y6m33eyb8zirqy8o3agsnw8r,6kgzhw37ujr6ug7aznjcj3fyqh`
+  (Ntale, Sophie).
 
 `MATTERMOST_URL`, thread mode and mention gating are plain config in the
 `hermes-ops.env` template in home.nix.
@@ -29,8 +31,7 @@ switch                       # renders ~/.hermes/env-ops, creates ~/.hermes/ops-
 home/hermes/seed.sh          # creates the profile, links SOUL + document cache, sets model
 ```
 
-Then fill in the three ids in `SOUL.md` (directors-only channel, the two DM
-channel ids: `POST /api/v4/channels/direct [bot_id, user_id]`) and DM the bot.
+Then DM the bot, or `@mise` it in a channel it is in.
 
 ## Attachments
 
