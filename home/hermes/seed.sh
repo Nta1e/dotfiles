@@ -16,6 +16,9 @@ echo "==> ssh key into the volume"
 run sh -c 'mkdir -p /opt/data/ssh && cat > /opt/data/ssh/id_ed25519 && chmod 600 /opt/data/ssh/id_ed25519 && chown -R hermes:hermes /opt/data/ssh' \
   < "$HOME/.config/sops-nix/secrets/hermes_ssh_key"
 
+echo "==> SOUL.md -> dotfiles (always-loaded system prompt)"
+run sh -c 'ln -sfn /opt/dotfiles-hermes/SOUL.md /opt/data/SOUL.md'
+
 echo "==> config.yaml"
 run hermes config set terminal.backend ssh
 run hermes config set model.provider anthropic

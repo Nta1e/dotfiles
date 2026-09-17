@@ -37,8 +37,9 @@ let
   '';
 
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
-  # and uid ownership. SOUL.md is the always-loaded system prompt (identity,
-  # routing rules, environment map); a read-only bind mount is fine for it.
+  # and uid ownership. home/hermes is bind-mounted as a directory (a single-file
+  # mount pins the inode and goes stale when git pull replaces the file);
+  # seed.sh symlinks /opt/data/SOUL.md into it.
   hermesCompose = pkgs.writeText "hermes-compose.yaml" (builtins.toJSON {
     services.hermes = {
       image = "nousresearch/hermes-agent";
@@ -47,8 +48,7 @@ let
       env_file = [ "${config.home.homeDirectory}/.hermes/env" ];
       volumes = [
         "hermes-data:/opt/data"
-        "${dotfiles}/home/hermes/SOUL.md:/opt/data/SOUL.md:ro"
-        "${dotfiles}/home/hermes/stt-host.sh:/opt/data/stt-host.sh:ro"
+        "${dotfiles}/home/hermes:/opt/dotfiles-hermes:ro"
       ];
     };
     volumes.hermes-data = { };
@@ -141,7 +141,7 @@ in
         TERMINAL_SSH_HOST=host.docker.internal
         TERMINAL_SSH_USER=${config.home.username}
         TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
-        HERMES_LOCAL_STT_COMMAND=/opt/data/stt-host.sh {input_path} {output_dir}
+        HERMES_LOCAL_STT_COMMAND=/opt/dotfiles-hermes/stt-host.sh {input_path} {output_dir}
       '';
     };
   };
