@@ -474,7 +474,19 @@ in
   launchd.agents.colima = lib.mkIf server {
     enable = true;
     config = {
-      ProgramArguments = [ "${config.home.profileDirectory}/bin/colima" "start" "--foreground" ];
+      ProgramArguments = [
+        (toString (pkgs.writeShellScript "colima-agent" ''
+          colima=${config.home.profileDirectory}/bin/colima
+          # `start --foreground` exits at once if colima was started by hand,
+          # which would make KeepAlive relaunch it every 10s. Hold until that
+          # instance stops, then fail so launchd relaunches us to own it.
+          if $colima status >/dev/null 2>&1; then
+            while $colima status >/dev/null 2>&1; do sleep 30; done
+            exit 1
+          fi
+          exec $colima start --foreground
+        ''))
+      ];
       RunAtLoad = true;
       KeepAlive = true;
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/colima.log";
