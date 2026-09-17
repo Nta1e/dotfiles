@@ -1,12 +1,14 @@
 # Hermes `ops` profile: Mattermost front door for the directors
 
-Second gateway on the server Mac, same image and volume as the Telegram
-liaison, running as Hermes profile `ops` (`HERMES_HOME=/opt/data/profiles/ops`)
-in its own container `hermes-ops`. Scope: Odoo operations only, answers in
-threads, two allowed users. `SOUL.md` here is its always-loaded prompt.
+Hermes profile `ops` (`/opt/data/profiles/ops` in the volume), served by the
+same gateway as the Telegram liaison (`gateway.multiplex_profiles`). A named
+profile reads secrets only from its own `.env`, which seed.sh copies in from
+the sops-rendered `~/.hermes/env-ops`; re-run seed.sh when those change.
+Scope: Odoo operations only, answers in threads, two allowed users. `SOUL.md`
+here is its always-loaded prompt.
 
 ```
-Mattermost -> hermes-ops (docker) --ssh--> host: psql (read-only) / kx (writes via odoo shell)
+Mattermost -> hermes gateway (docker, profile ops) --ssh--> host: psql (read-only) / kx (writes via odoo shell)
 ```
 
 Writes go through `kx` (`~/workspace/odoo/tools/kx`, on PATH via home.nix),

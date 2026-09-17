@@ -41,33 +41,23 @@ let
   # mount pins the inode and goes stale when git pull replaces the file);
   # seed.sh symlinks /opt/data/SOUL.md into it.
   #
-  # Two gateways, one image and volume: the default profile is the Telegram
-  # liaison, the `ops` profile (HERMES_HOME=/opt/data/profiles/ops) is the
-  # Mattermost front door. Each container only sees its own platform's env,
-  # so neither profile double-binds the other's bot.
-  hermesVolumes = [
-    "hermes-data:/opt/data"
-    "${dotfiles}/home/hermes:/opt/dotfiles-hermes:ro"
-  ];
+  # One gateway serves both profiles (gateway.multiplex_profiles, set by
+  # seed.sh): the default profile is the Telegram liaison, `ops`
+  # (/opt/data/profiles/ops) is the Mattermost front door. A named profile
+  # reads secrets only from its own .env, which seed.sh copies in from the
+  # sops-rendered ~/.hermes/env-ops, so neither bot sees the other's token.
+  # Attachments the captains post land in the ops document cache; that cache
+  # is a symlink (seed.sh) to the host directory mounted here so `kx` on the
+  # host can read the PDF the agent was handed.
   hermesCompose = pkgs.writeText "hermes-compose.yaml" (builtins.toJSON {
     services.hermes = {
       image = "nousresearch/hermes-agent";
       container_name = "hermes";
       command = [ "gateway" "run" ];
       env_file = [ "${config.home.homeDirectory}/.hermes/env" ];
-      volumes = hermesVolumes;
-    };
-    # Attachments the captains post land in the profile's document cache;
-    # that cache is a symlink (seed.sh) to this host directory so `kx` on the
-    # host can read the PDF the agent was handed.
-    services.hermes-ops = {
-      image = "nousresearch/hermes-agent";
-      container_name = "hermes-ops";
-      # the image's wrapper only recognises a leading executable or a bare
-      # subcommand, so `-p` needs `hermes` spelled out
-      command = [ "hermes" "-p" "ops" "gateway" "run" ];
-      env_file = [ "${config.home.homeDirectory}/.hermes/env-ops" ];
-      volumes = hermesVolumes ++ [
+      volumes = [
+        "hermes-data:/opt/data"
+        "${dotfiles}/home/hermes:/opt/dotfiles-hermes:ro"
         "${config.home.homeDirectory}/.hermes/ops-documents:/opt/host-documents"
       ];
     };
@@ -167,6 +157,7 @@ in
         HERMES_LOCAL_STT_COMMAND=/opt/dotfiles-hermes/stt-host.sh {input_path} {output_dir}
       '';
     };
+    # Copied into the ops profile by seed.sh (re-run it when these change).
     # Thread mode: every reply nests under the post that asked. Channels need
     # an @mention; DMs never do.
     templates."hermes-ops.env" = {
@@ -181,6 +172,7 @@ in
         TERMINAL_SSH_HOST=host.docker.internal
         TERMINAL_SSH_USER=${config.home.username}
         TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
+        TERMINAL_ENV=ssh
       '';
     };
   };
