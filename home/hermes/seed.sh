@@ -41,6 +41,8 @@ ops config set model.provider anthropic
 # Sonnet for the money work; the Telegram liaison stays on Haiku.
 ops config set model.default claude-sonnet-5
 ops config set agent.max_turns 40
+# No "terminal..." bubbles in the thread; the persona narrates instead.
+ops config set display.platforms.mattermost.tool_progress off
 # One gateway process serves every profile.
 run hermes config set gateway.multiplex_profiles true
 # --entrypoint runs as root; the gateway runs as `hermes` (skills/ too: the

@@ -168,6 +168,7 @@ in
         MATTERMOST_ALLOWED_USERS=${config.sops.placeholder.mattermost_ops_users}
         MATTERMOST_REPLY_MODE=thread
         MATTERMOST_REQUIRE_MENTION=true
+        MATTERMOST_HOME_CHANNEL=bx8cps71sfriucrcswcmc3fixe
         ANTHROPIC_TOKEN=${config.sops.placeholder.claude_oauth_token}
         TERMINAL_SSH_HOST=host.docker.internal
         TERMINAL_SSH_USER=${config.home.username}
