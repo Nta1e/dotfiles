@@ -25,7 +25,8 @@ let
   '';
 
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
-  # and uid ownership. Skills are read-only bind mounts, fine either way.
+  # and uid ownership. SOUL.md is the always-loaded system prompt (identity,
+  # routing rules, environment map); a read-only bind mount is fine for it.
   hermesCompose = pkgs.writeText "hermes-compose.yaml" (builtins.toJSON {
     services.hermes = {
       image = "nousresearch/hermes-agent";
@@ -34,7 +35,7 @@ let
       env_file = [ "${config.home.homeDirectory}/.hermes/env" ];
       volumes = [
         "hermes-data:/opt/data"
-        "${dotfiles}/home/hermes/skills/firstmate:/opt/data/skills/firstmate:ro"
+        "${dotfiles}/home/hermes/SOUL.md:/opt/data/SOUL.md:ro"
       ];
     };
     volumes.hermes-data = { };

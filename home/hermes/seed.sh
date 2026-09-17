@@ -20,6 +20,8 @@ echo "==> config.yaml"
 run hermes config set terminal.backend ssh
 run hermes config set model.provider anthropic
 run hermes config set model.default claude-haiku-4-5
+# a lost agent stops after this many tool calls instead of the default 500
+run hermes config set agent.max_turns 30
 
 echo "==> restart gateway"
 launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.hermes"

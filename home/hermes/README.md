@@ -3,7 +3,7 @@
 Hermes Agent runs as a docker container on the server Mac (upstream does not
 support macOS on Intel natively) and is the captain's phone-side liaison. Its
 terminal tool reaches the host over ssh and drives firstmate through
-`fm-inbox.sh note|status` and the herdr CLI, per `skills/firstmate/SKILL.md`.
+`fm-inbox.sh note|status` and the herdr CLI, per `SOUL.md`, the always-loaded system prompt.
 
 ```
 phone (Telegram) -> hermes gateway (docker, colima) --ssh--> host: fm-inbox.sh / herdr
