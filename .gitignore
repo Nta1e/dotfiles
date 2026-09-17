@@ -1,1 +1,4 @@
 result
+# herdr runtime state lives next to its config (dir is symlinked into ~/.config)
+home/.config/herdr/*
+!home/.config/herdr/config.toml
