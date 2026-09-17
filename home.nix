@@ -4,6 +4,29 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   brewPrefix = if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew" else "/usr/local";
 
+  # Shared by zsh and bash login shells.
+  shellExports = ''
+    export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
+    export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
+    export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+    export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml:$HOME/.kube/config"
+
+    export B2_APPLICATION_KEY_ID=$(cat ${config.sops.secrets.b2_application_key_id.path})
+    export B2_APPLICATION_KEY=$(cat ${config.sops.secrets.b2_application_key.path})
+    export AWS_ACCESS_KEY_ID=$(cat ${config.sops.secrets.aws_access_key_id.path})
+    export AWS_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.aws_secret_access_key.path})
+    export DIGITALOCEAN_TOKEN=$(cat ${config.sops.secrets.digitalocean_token.path})
+    export SPACES_ACCESS_KEY_ID=$(cat ${config.sops.secrets.spaces_access_key_id.path})
+    export SPACES_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.spaces_secret_access_key.path})
+    export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
+    export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
+    export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
+  '' + lib.optionalString server ''
+    export CLAUDE_CODE_OAUTH_TOKEN=$(cat ${config.sops.secrets.claude_oauth_token.path})
+  '' + ''
+    export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
+  '';
+
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
   # and uid ownership. Skills are read-only bind mounts, fine either way.
   hermesCompose = pkgs.writeText "hermes-compose.yaml" (builtins.toJSON {
@@ -140,29 +163,17 @@ in
     syntaxHighlighting = {
       enable = true;
     };
-    initContent = lib.mkOrder 1500 (''
-      export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
-      export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
-      export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-      export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml:$HOME/.kube/config"
-
-      export B2_APPLICATION_KEY_ID=$(cat ${config.sops.secrets.b2_application_key_id.path})
-      export B2_APPLICATION_KEY=$(cat ${config.sops.secrets.b2_application_key.path})
-      export AWS_ACCESS_KEY_ID=$(cat ${config.sops.secrets.aws_access_key_id.path})
-      export AWS_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.aws_secret_access_key.path})
-      export DIGITALOCEAN_TOKEN=$(cat ${config.sops.secrets.digitalocean_token.path})
-      export SPACES_ACCESS_KEY_ID=$(cat ${config.sops.secrets.spaces_access_key_id.path})
-      export SPACES_SECRET_ACCESS_KEY=$(cat ${config.sops.secrets.spaces_secret_access_key.path})
-      export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
-      export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
-      export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
-    '' + lib.optionalString server ''
-      export CLAUDE_CODE_OAUTH_TOKEN=$(cat ${config.sops.secrets.claude_oauth_token.path})
-    '' + ''
-      export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
-
+    initContent = lib.mkOrder 1500 (shellExports + ''
       export _ZO_DOCTOR=0
     '');
+  };
+
+  # Same environment for `bash -l`: Hermes' ssh terminal backend and ad-hoc
+  # `ssh host bash -lc ...` are bash, and kubectl/hcloud must not silently
+  # fall back to other defaults there.
+  programs.bash = {
+    enable = true;
+    profileExtra = shellExports;
   };
 
   programs.starship = {
