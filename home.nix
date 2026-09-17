@@ -4,6 +4,22 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   brewPrefix = if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew" else "/usr/local";
 
+  # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
+  # and uid ownership. Skills are read-only bind mounts, fine either way.
+  hermesCompose = pkgs.writeText "hermes-compose.yaml" (builtins.toJSON {
+    services.hermes = {
+      image = "nousresearch/hermes-agent";
+      container_name = "hermes";
+      command = [ "gateway" "run" ];
+      env_file = [ "${config.home.homeDirectory}/.hermes/env" ];
+      volumes = [
+        "hermes-data:/opt/data"
+        "${dotfiles}/home/hermes/skills/firstmate:/opt/data/skills/firstmate:ro"
+      ];
+    };
+    volumes.hermes-data = { };
+  });
+
   # figma-axi is not on npm (the other *-axi CLIs run via `npx -y` at call time)
   figma-axi = pkgs.buildNpmPackage {
     pname = "figma-axi";
@@ -84,9 +100,29 @@ in
       kube_config = {
         path = "${config.home.homeDirectory}/.kube/config";
       };
+    } // lib.optionalAttrs server {
+      # Hermes gateway (Telegram -> firstmate); see home/hermes/README.md
+      telegram_bot_token = { };
+      telegram_allowed_users = { };
+      hermes_ssh_key = { };
+    };
+  } // lib.optionalAttrs server {
+    # Read host-side by docker-compose (env_file), so the container never
+    # needs the sops dir mounted. ANTHROPIC_TOKEN = the claude setup-token:
+    # Hermes routes as Claude Code, drawing on the Max plan's extra usage.
+    templates."hermes.env" = {
+      path = "${config.home.homeDirectory}/.hermes/env";
+      content = ''
+        TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
+        TELEGRAM_ALLOWED_USERS=${config.sops.placeholder.telegram_allowed_users}
+        ANTHROPIC_TOKEN=${config.sops.placeholder.claude_oauth_token}
+        TERMINAL_SSH_HOST=host.docker.internal
+        TERMINAL_SSH_USER=${config.home.username}
+        TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
+      '';
     };
   };
-  
+
   # https://github.com/malob/nixpkgs/blob/master/home/default.nix
   home.shell.enableShellIntegration = false;
   home.shell.enableZshIntegration = true;
@@ -432,6 +468,37 @@ in
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
       StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
       EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:${brewPrefix}/bin:/usr/local/bin:/usr/bin:/bin";
+    };
+  };
+
+  launchd.agents.colima = lib.mkIf server {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${config.home.profileDirectory}/bin/colima" "start" "--foreground" ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/colima.log";
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/colima.log";
+      EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:/usr/bin:/bin";
+    };
+  };
+
+  # Hermes runs in docker: upstream does not support macOS on Intel natively.
+  # Its shell tool reaches this host over ssh (TERMINAL_SSH_* in hermes.env).
+  launchd.agents.hermes = lib.mkIf server {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        (toString (pkgs.writeShellScript "hermes-gateway" ''
+          export DOCKER_HOST="unix://${config.home.homeDirectory}/.colima/default/docker.sock"
+          until ${pkgs.docker}/bin/docker info >/dev/null 2>&1; do sleep 5; done
+          exec ${pkgs.docker-compose}/bin/docker-compose -f ${hermesCompose} up --no-color
+        ''))
+      ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/hermes.log";
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/hermes.log";
     };
   };
 
