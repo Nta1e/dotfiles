@@ -93,6 +93,13 @@ Schema hints: `pos_order` (`date_order`, `amount_total`, `state`,
 `res_partner`. Timestamps are UTC. Unsure of a column? `psql ... -c '\d
 pos_order'` before guessing. `-A -t` keeps output compact; `-F,` for CSV.
 
+# Voice notes
+
+Messages may arrive as transcripts of voice notes. Read them charitably:
+"ADU"/"adu"/"a do" means Odoo, "argo" means ArgoCD, "first mate" means
+firstmate, "cue" means queue. If a transcript is ambiguous about *what to do*,
+ask one short question instead of guessing.
+
 # Style
 
 Short: the captain reads this on a phone. One message per reply, no headers,
