@@ -126,6 +126,7 @@ class MattermostAdapter(BasePlatformAdapter):
         # replied there) answer follow-ups without a fresh @mention, like the Slack adapter's
         # mentioned-threads set. root_id -> last activity (monotonic seconds).
         self._active_threads: Dict[str, float] = {}
+        self._inactive_threads: Dict[str, float] = {}
 
     # --- HTTP helpers ---
 
@@ -233,6 +234,29 @@ class MattermostAdapter(BasePlatformAdapter):
             del self._active_threads[root_id]
             return False
         return True
+
+    async def _thread_involves_bot(self, root_id: str) -> bool:
+        """Cold check for a reply in a thread this process has not seen (gateway restarted): the
+        thread counts as the bot's if it ever posted there or was @mentioned there. Negative
+        answers are cached briefly so a busy thread does not cost a request per reply."""
+        import time
+        now = time.monotonic()
+        miss = self._inactive_threads.get(root_id)
+        if miss is not None and now - miss < 600:
+            return False
+        data = await self._api_get(f"posts/{root_id}/thread")
+        posts = (data or {}).get("posts") or {}
+        mention = f"@{self._bot_username}".lower()
+        involved = any(
+            p.get("user_id") == self._bot_user_id or mention in (p.get("message") or "").lower()
+            for p in posts.values())
+        if involved:
+            self._remember_thread(root_id)
+        else:
+            self._inactive_threads[root_id] = now
+            if len(self._inactive_threads) > self._ACTIVE_THREADS_MAX:
+                self._inactive_threads.clear()
+        return involved
 
     async def _post_with_file(self, chat_id: str, file_id: str, caption: Optional[str], reply_to: Optional[str],
                               metadata: _Metadata) -> SendResult:
@@ -591,7 +615,8 @@ class MattermostAdapter(BasePlatformAdapter):
         message_text = post.get("message", "")
         root_id = post.get("root_id") or post_id
         if not is_dm:  # DMs need no gating; channels are mention-gated.
-            if self._in_active_thread(root_id):
+            is_reply = bool(post.get("root_id"))
+            if self._in_active_thread(root_id) or (is_reply and await self._thread_involves_bot(root_id)):
                 message_text = self._apply_channel_gating(channel_id, f"@{self._bot_username} {message_text}")
             else:
                 message_text = self._apply_channel_gating(channel_id, message_text)
