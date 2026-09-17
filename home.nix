@@ -63,7 +63,9 @@ let
     services.hermes-ops = {
       image = "nousresearch/hermes-agent";
       container_name = "hermes-ops";
-      command = [ "-p" "ops" "gateway" "run" ];
+      # the image's wrapper only recognises a leading executable or a bare
+      # subcommand, so `-p` needs `hermes` spelled out
+      command = [ "hermes" "-p" "ops" "gateway" "run" ];
       env_file = [ "${config.home.homeDirectory}/.hermes/env-ops" ];
       volumes = hermesVolumes ++ [
         "${config.home.homeDirectory}/.hermes/ops-documents:/opt/host-documents"
