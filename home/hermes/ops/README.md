@@ -1,9 +1,12 @@
 # Hermes `ops` profile: Mattermost front door for the directors
 
 Hermes profile `ops` (`/opt/data/profiles/ops` in the volume), served by the
-same gateway as the Telegram liaison (`gateway.multiplex_profiles`). A named
-profile reads secrets only from its own `.env`, which seed.sh copies in from
-the sops-rendered `~/.hermes/env-ops`; re-run seed.sh when those change.
+same gateway as the Telegram liaison (`gateway.multiplex_profiles`). Under
+multiplex EVERY profile, the default one included, reads its credentials and
+allowlists from its own `.env` and never from the container env (the gates
+fail closed on a miss, so a Telegram allowlist living only in the env_file
+blocks everyone). seed.sh merges `~/.hermes/env` into `/opt/data/.env` and
+`~/.hermes/env-ops` into the ops profile's `.env`; re-run it when they change.
 Scope: Odoo operations only, answers in threads, two allowed users. `SOUL.md`
 here is its always-loaded prompt.
 

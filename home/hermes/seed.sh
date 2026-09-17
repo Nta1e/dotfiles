@@ -26,13 +26,36 @@ run hermes config set model.default claude-haiku-4-5
 # a lost agent stops after this many tool calls instead of the default 500
 run hermes config set agent.max_turns 30
 
+echo "==> default profile .env"
+# Under gateway.multiplex_profiles every profile, the default included, reads
+# its credentials and allow/deny gates from its own .env only, never from the
+# container env. Merge the sops-rendered env into the hermes-managed .env key
+# by key so `hermes config`/`hermes setup` edits to that file survive.
+merge_env() {  # $1 = .env path inside the container; stdin = KEY=VALUE lines
+  run python3 -c '
+import re, sys
+from pathlib import Path
+path = Path(sys.argv[1]); path.touch(mode=0o600)
+new = dict(l.split("=", 1) for l in sys.stdin.read().splitlines() if "=" in l and not l.startswith("#"))
+out = []
+for line in path.read_text().splitlines():
+    m = re.match(r"([A-Za-z_][A-Za-z0-9_]*)=", line)
+    if m and m.group(1) in new:
+        line = f"{m.group(1)}={new.pop(m.group(1))}"
+    out.append(line)
+out += [f"{k}={v}" for k, v in new.items()]
+path.write_text("\n".join(out) + "\n")
+' "$1"
+}
+merge_env /opt/data/.env < "$HOME/.hermes/env"
+
 echo "==> ops profile (Mattermost)"
 run sh -c 'hermes profile list 2>/dev/null | grep -q "^ *ops\b" || hermes profile create --no-alias ops'
 ops() { run hermes -p ops "$@"; }
 run sh -c 'ln -sfn /opt/dotfiles-hermes/ops/SOUL.md /opt/data/profiles/ops/SOUL.md'
 # A named profile only reads its own .env, never the container env: that is
 # what keeps the Telegram token out of the ops bot and vice versa.
-run sh -c 'cat > /opt/data/profiles/ops/.env && chmod 600 /opt/data/profiles/ops/.env' < "$HOME/.hermes/env-ops"
+merge_env /opt/data/profiles/ops/.env < "$HOME/.hermes/env-ops"
 # Attachments: the profile's document cache points at the host-mounted dir,
 # so a PDF a captain posts is readable by kx on the host (~/.hermes/ops-documents).
 run sh -c 'mkdir -p /opt/data/profiles/ops/cache && rm -rf /opt/data/profiles/ops/cache/documents && ln -sfn /opt/host-documents /opt/data/profiles/ops/cache/documents'
@@ -47,7 +70,7 @@ ops config set display.platforms.mattermost.tool_progress off
 run hermes config set gateway.multiplex_profiles true
 # --entrypoint runs as root; the gateway runs as `hermes` (skills/ too: the
 # image copies its bundled skills there at boot and warns if it cannot)
-run sh -c 'chown -R hermes:hermes /opt/data/profiles /opt/data/skills'
+run sh -c 'chown -R hermes:hermes /opt/data/.env /opt/data/profiles /opt/data/skills'
 
 echo "==> restart gateway"
 launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.hermes"
