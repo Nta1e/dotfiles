@@ -17,9 +17,11 @@ never ad-hoc SQL, and the SOUL makes the bot dry-run and ask first.
 ## Secrets (sops secrets.yaml)
 
 - `mattermost_bot_token`: the `mise` bot's token (the same one Odoo posts
-  with; it already sits in the channels that matter, and the gateway ignores
-  the bot's own posts, so Odoo's alerts never trigger it). Also read by
-  `kx mm dm` on the host from the sops secret file.
+  with; the gateway ignores the bot's own posts, so Odoo's alerts never
+  trigger it). Also read by `kx mm dm` on the host from the sops secret file.
+  `system_post_all` lets Odoo post into channels the bot is not in, but a
+  non-member gets no events: `/invite @mise` in every channel it should
+  answer in. DMs need nothing.
 - `mattermost_ops_users`: `54y6m33eyb8zirqy8o3agsnw8r,6kgzhw37ujr6ug7aznjcj3fyqh`
   (Ntale, Sophie).
 
