@@ -24,6 +24,18 @@ let
     export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
   '';
 
+  # Telegram voice notes: whisper.cpp on the host CPU (OpenSuperWhisper's Intel
+  # build returns garbage; Metal on the Intel GPU fails, hence -ng). About 11s
+  # for a 17s note on the i9. Called by home/hermes/stt-host.sh over ssh.
+  whisperModel = pkgs.fetchurl {
+    url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin";
+    hash = "sha256-H8cPd0046xaZk6w5Huo1fvR8iHV+9y7llDh5t+jivGk=";
+  };
+  hermesStt = pkgs.writeShellScriptBin "hermes-stt" ''
+    exec ${pkgs.whisper-cpp}/bin/whisper-cli -ng -nt -np -m ${whisperModel} -f "$1" \
+      --prompt "Odoo, ArgoCD, Argo, Krunchix, Hetzner, firstmate, crewmate, Postgres, Telegram, kubectl" 2>/dev/null
+  '';
+
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
   # and uid ownership. SOUL.md is the always-loaded system prompt (identity,
   # routing rules, environment map); a read-only bind mount is fine for it.
@@ -36,6 +48,7 @@ let
       volumes = [
         "hermes-data:/opt/data"
         "${dotfiles}/home/hermes/SOUL.md:/opt/data/SOUL.md:ro"
+        "${dotfiles}/home/hermes/stt-host.sh:/opt/data/stt-host.sh:ro"
       ];
     };
     volumes.hermes-data = { };
@@ -128,6 +141,7 @@ in
         TERMINAL_SSH_HOST=host.docker.internal
         TERMINAL_SSH_USER=${config.home.username}
         TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
+        HERMES_LOCAL_STT_COMMAND=/opt/data/stt-host.sh {input_path} {output_dir}
       '';
     };
   };
@@ -411,6 +425,8 @@ in
   ] ++ lib.optionals (!server) [
     # Heavy, uncached python/arrow build on x86_64-darwin; not needed headless
     inputs.sqlit.packages.${system}.default
+  ] ++ lib.optionals server [
+    hermesStt
   ];
 
 

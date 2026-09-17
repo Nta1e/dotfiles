@@ -28,6 +28,8 @@ home/hermes/seed.sh          # ssh key into the volume, terminal.backend=ssh, mo
 tail -f ~/Library/Logs/hermes.log
 ```
 
+Voice notes are transcribed on the host by `hermes-stt` (whisper.cpp, large-v3-turbo) via `stt-host.sh`.
+
 Then DM the bot. Change the model any time with `docker exec hermes hermes config set model.default <id>`
 or `/model` in chat. Update: `docker-compose -f <compose> pull` then
 `launchctl kickstart -k gui/$(id -u)/org.nix-community.home.hermes`.

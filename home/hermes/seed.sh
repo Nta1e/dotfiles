@@ -22,6 +22,8 @@ run hermes config set model.provider anthropic
 run hermes config set model.default claude-haiku-4-5
 # a lost agent stops after this many tool calls instead of the default 500
 run hermes config set agent.max_turns 30
+# telegram voice notes: transcribed on the host by OpenSuperWhisper (stt-host.sh)
+run hermes config set stt.provider local_command
 
 echo "==> restart gateway"
 launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.hermes"
