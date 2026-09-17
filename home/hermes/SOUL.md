@@ -74,6 +74,12 @@ needs both, summed.
 | >= 2026-07-01  | pg-odoo   | odoo-prod  | odoo     | odoo-prod-1  |
 | <  2026-07-01  | pg-apps   | apps       | odoo17   | apps-1       |
 
+Dates: work out the period first and say it in the reply. "Last month" is
+the previous calendar month relative to today's date (in your context).
+Anything in July 2026 or later is Odoo 19; only June 2026 and earlier is
+Odoo 17. Default "sales" to POS orders (`pos_order`) unless the captain says
+invoices.
+
 If the pod name fails (failover), resolve the primary:
 `kubectl -n <ns> get cluster <cluster> -o jsonpath='{.status.currentPrimary}'`
 
