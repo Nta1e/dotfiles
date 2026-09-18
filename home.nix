@@ -134,6 +134,8 @@ in
       kx_hcloud_kubeconfig = {
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
       };
+      # typesafe.ai (Jev): firstmate's typed dispatch resolver
+      typesafe_api_key = { };
     } // lib.optionalAttrs server {
       # Hermes gateway (Telegram -> firstmate); see home/hermes/README.md
       telegram_bot_token = { };
@@ -142,6 +144,15 @@ in
       # Mattermost front door (`ops` profile); see home/hermes/ops/README.md
       mattermost_bot_token = { };
       mattermost_ops_users = { };
+    };
+    # firstmate's operator-owned .env (it never writes it): with the key
+    # present, bin/fm-dispatch-resolve.sh picks the crewmate profile through
+    # Jev instead of the LLM reading dispatch rules; absent = today's routing.
+    templates."firstmate.env" = {
+      path = "${config.home.homeDirectory}/workspace/firstmate/.env";
+      content = ''
+        TYPESAFE_API_KEY=${config.sops.placeholder.typesafe_api_key}
+      '';
     };
   } // lib.optionalAttrs server {
     # Read host-side by docker-compose (env_file), so the container never
