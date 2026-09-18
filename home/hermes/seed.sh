@@ -5,10 +5,9 @@
 set -euo pipefail
 
 export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
-# The compose file is a store path baked into the launchd script; read it from
-# the installed plist rather than duplicating it here.
-script=$(plutil -extract ProgramArguments.2 raw -o - ~/Library/LaunchAgents/org.nix-community.home.hermes.plist | grep -o '/nix/store/[^ ]*hermes-gateway')
-composefile=$(grep -o '/nix/store/[^ ]*hermes-compose.yaml' "$script")
+# The compose file is a store path baked into the hermes-gateway script the
+# daemon runs; read it from there rather than duplicating it here.
+composefile=$(grep -o '/nix/store/[^ ]*hermes-compose.yaml' "$(command -v hermes-gateway)")
 run() { docker-compose -f "$composefile" run --rm -T --entrypoint "$1" hermes "${@:2}"; }
 
 echo "==> ssh key into the volume"
@@ -73,5 +72,5 @@ run hermes config set gateway.multiplex_profiles true
 run sh -c 'chown -R hermes:hermes /opt/data/.env /opt/data/profiles /opt/data/skills'
 
 echo "==> restart gateway"
-launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.hermes"
+sudo launchctl kickstart -k system/org.nixos.hermes
 echo "done; tail -f ~/Library/Logs/hermes.log"

@@ -64,6 +64,35 @@
       done
       '';
  
+  # The headless Intel Mac's always-on services, as system daemons running as
+  # the user: they start at boot and survive a logout or a WindowServer crash,
+  # which a per-user LaunchAgent does not (2026-09-18: both relays went down
+  # with the GUI session). The scripts live in the user profile (home.nix).
+  launchd.daemons = let
+    user = "ntaleshadik";
+    home = "/Users/${user}";
+    bin = "/etc/profiles/per-user/${user}/bin";
+    daemon = name: log: {
+      serviceConfig = {
+        ProgramArguments = [ "${bin}/${name}" ];
+        UserName = user;
+        GroupName = "staff";
+        WorkingDirectory = home;
+        EnvironmentVariables = {
+          HOME = home;
+          PATH = "${bin}:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+        };
+        RunAtLoad = true;
+        KeepAlive = true;
+        StandardOutPath = "${home}/Library/Logs/${log}";
+        StandardErrorPath = "${home}/Library/Logs/${log}";
+      };
+    };
+  in lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+    colima = daemon "colima-daemon" "colima.log";
+    hermes = daemon "hermes-gateway" "hermes.log";
+  };
+
   # Remote Login: keys only. Make sure `ssh <host>` works without a password
   # before switching this in, or the next login needs the screen.
   environment.etc."ssh/sshd_config.d/200-keys-only.conf".text = ''

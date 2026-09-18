@@ -52,6 +52,29 @@ let
       --data-urlencode "disable_web_page_preview=true"
   '';
 
+  colimaDaemon = pkgs.writeShellScriptBin "colima-daemon" ''
+    colima=${config.home.profileDirectory}/bin/colima
+    # `start --foreground` exits at once if colima was started by hand,
+    # which would make KeepAlive relaunch it every 10s. Hold until that
+    # instance stops, then fail so launchd relaunches us to own it.
+    if $colima status >/dev/null 2>&1; then
+      while $colima status >/dev/null 2>&1; do sleep 30; done
+      exit 1
+    fi
+    exec $colima start --foreground
+  '';
+
+  # Hermes runs in docker: upstream does not support macOS on Intel natively.
+  # Its shell tool reaches this host over ssh (TERMINAL_SSH_* in hermes.env).
+  # Waits for docker and for the sops-rendered env_file (installed at login),
+  # so a boot before auto-login just retries instead of failing the unit.
+  hermesGateway = pkgs.writeShellScriptBin "hermes-gateway" ''
+    export DOCKER_HOST="unix://${config.home.homeDirectory}/.colima/default/docker.sock"
+    until ${pkgs.docker}/bin/docker info >/dev/null 2>&1; do sleep 5; done
+    until [ -r ${config.home.homeDirectory}/.hermes/env ]; do sleep 5; done
+    exec ${pkgs.docker-compose}/bin/docker-compose -f ${hermesCompose} up --no-color
+  '';
+
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
   # and uid ownership. home/hermes is bind-mounted as a directory (a single-file
   # mount pins the inode and goes stale when git pull replaces the file);
@@ -504,6 +527,8 @@ in
   ] ++ lib.optionals server [
     hermesStt
     fmTg
+    colimaDaemon
+    hermesGateway
   ];
 
 
@@ -560,48 +585,9 @@ in
     };
   };
 
-  launchd.agents.colima = lib.mkIf server {
-    enable = true;
-    config = {
-      ProgramArguments = [
-        (toString (pkgs.writeShellScript "colima-agent" ''
-          colima=${config.home.profileDirectory}/bin/colima
-          # `start --foreground` exits at once if colima was started by hand,
-          # which would make KeepAlive relaunch it every 10s. Hold until that
-          # instance stops, then fail so launchd relaunches us to own it.
-          if $colima status >/dev/null 2>&1; then
-            while $colima status >/dev/null 2>&1; do sleep 30; done
-            exit 1
-          fi
-          exec $colima start --foreground
-        ''))
-      ];
-      RunAtLoad = true;
-      KeepAlive = true;
-      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/colima.log";
-      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/colima.log";
-      EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:/usr/bin:/bin";
-    };
-  };
-
-  # Hermes runs in docker: upstream does not support macOS on Intel natively.
-  # Its shell tool reaches this host over ssh (TERMINAL_SSH_* in hermes.env).
-  launchd.agents.hermes = lib.mkIf server {
-    enable = true;
-    config = {
-      ProgramArguments = [
-        (toString (pkgs.writeShellScript "hermes-gateway" ''
-          export DOCKER_HOST="unix://${config.home.homeDirectory}/.colima/default/docker.sock"
-          until ${pkgs.docker}/bin/docker info >/dev/null 2>&1; do sleep 5; done
-          exec ${pkgs.docker-compose}/bin/docker-compose -f ${hermesCompose} up --no-color
-        ''))
-      ];
-      RunAtLoad = true;
-      KeepAlive = true;
-      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/hermes.log";
-      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/hermes.log";
-    };
-  };
+  # colima and the Hermes gateway are system LaunchDaemons (configuration.nix),
+  # not agents: a WindowServer crash or a logout must not take the relays
+  # down. The daemons exec colima-daemon / hermes-gateway from this profile.
 
   # firstmate is a clone, not a package (the checkout is the agent home and
   # updates itself via /updatefirstmate), so clone once if absent, then seed
