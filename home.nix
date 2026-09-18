@@ -148,17 +148,18 @@ in
     # firstmate's operator-owned .env (it never writes it): with the key
     # present, bin/fm-dispatch-resolve.sh picks the crewmate profile through
     # Jev instead of the LLM reading dispatch rules; absent = today's routing.
-    templates."firstmate.env" = {
-      path = "${config.home.homeDirectory}/workspace/firstmate/.env";
-      content = ''
-        TYPESAFE_API_KEY=${config.sops.placeholder.typesafe_api_key}
-      '';
-    };
-  } // lib.optionalAttrs server {
+    templates = {
+      "firstmate.env" = {
+        path = "${config.home.homeDirectory}/workspace/firstmate/.env";
+        content = ''
+          TYPESAFE_API_KEY=${config.sops.placeholder.typesafe_api_key}
+        '';
+      };
+    } // lib.optionalAttrs server {
     # Read host-side by docker-compose (env_file), so the container never
     # needs the sops dir mounted. ANTHROPIC_TOKEN = the claude setup-token:
     # Hermes routes as Claude Code, drawing on the Max plan's extra usage.
-    templates."hermes.env" = {
+    "hermes.env" = {
       path = "${config.home.homeDirectory}/.hermes/env";
       content = ''
         TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
@@ -173,7 +174,7 @@ in
     # Copied into the ops profile by seed.sh (re-run it when these change).
     # Thread mode: every reply nests under the post that asked. Channels need
     # an @mention; DMs never do.
-    templates."hermes-ops.env" = {
+    "hermes-ops.env" = {
       path = "${config.home.homeDirectory}/.hermes/env-ops";
       content = ''
         MATTERMOST_URL=https://chat.krunchix.cafe
@@ -189,6 +190,7 @@ in
         TERMINAL_SSH_KEY=/opt/data/ssh/id_ed25519
         TERMINAL_ENV=ssh
       '';
+    };
     };
   };
 
