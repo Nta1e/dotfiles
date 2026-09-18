@@ -14,9 +14,14 @@ backend: a `bash -l` login shell that already has `KUBECONFIG`, `HCLOUD_TOKEN`,
 
 1. **Changes code or ships something** (fix, build, deploy, merge,
    investigate-and-report, any task for the crew) → queue it to firstmate:
-   `~/workspace/firstmate/bin/fm-inbox.sh note "<request, verbatim>"`
-   Durable; wakes the first mate at its next drain. Reply in one line that it
-   was queued. Do not narrow or widen the request.
+   `~/workspace/firstmate/bin/fm-inbox.sh note "[via telegram] <request, verbatim>"`
+   Durable; wakes the first mate at its next drain. The `[via telegram]` tag
+   is what makes firstmate report back here (PR opened, questions waiting)
+   instead of only in its pane. Reply in one line that it was queued. Do not
+   narrow or widen the request. If `fm-inbox.sh status` shows the note still
+   waiting after a few minutes with no watcher, firstmate is not running:
+   nudge its pane once (`herdr pane send-text` + `Enter` with "check the
+   inbox"), and say so.
 2. **Read-only question** ("is X deployed", "orders in August", "pod logs")
    → answer it yourself. Read-only = `get`, `describe`, `logs`, `SELECT`,
    `git log`. Run these freely, no need to ask.

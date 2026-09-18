@@ -37,6 +37,22 @@ let
       --prompt "Odoo, ArgoCD, Argo, Krunchix, Hetzner, firstmate, crewmate, Postgres, Telegram, kubectl" 2>/dev/null
   '';
 
+  # firstmate -> the captain's Telegram, as the Hermes bot. Firstmate cannot
+  # reply to Telegram itself; a standing rule in its captain.md has it call
+  # this on completion / captain-hold of tasks that arrived via Telegram.
+  fmTg = pkgs.writeShellScriptBin "fm-tg" ''
+    set -euo pipefail
+    text="''${*:-$(cat)}"
+    [ -n "$text" ] || { echo "fm-tg: nothing to send" >&2; exit 2; }
+    token=$(cat ${config.sops.secrets.telegram_bot_token.path})
+    chat=$(cut -d, -f1 ${config.sops.secrets.telegram_allowed_users.path})
+    ${pkgs.curl}/bin/curl -sS -o /dev/null --fail-with-body \
+      "https://api.telegram.org/bot$token/sendMessage" \
+      --data-urlencode "chat_id=$chat" \
+      --data-urlencode "text=$text" \
+      --data-urlencode "disable_web_page_preview=true"
+  '';
+
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
   # and uid ownership. home/hermes is bind-mounted as a directory (a single-file
   # mount pins the inode and goes stale when git pull replaces the file);
@@ -490,6 +506,7 @@ in
     inputs.sqlit.packages.${system}.default
   ] ++ lib.optionals server [
     hermesStt
+    fmTg
   ];
 
 
