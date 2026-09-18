@@ -334,6 +334,14 @@ in
   
   programs.direnv = {
     enable = true;
+    # Our checkouts load without `direnv allow`: firstmate's crewmates work in
+    # fresh treehouse worktrees, each a new path, and a blocked .envrc leaves
+    # them without the repo's devshell (odoo: python, ruff, just, pre-commit).
+    # Trade-off accepted: any .envrc under these prefixes runs unreviewed.
+    config.whitelist.prefix = [
+      "${config.home.homeDirectory}/workspace"
+      "${config.home.homeDirectory}/.treehouse"
+    ];
   };
   
   programs.bat = {
