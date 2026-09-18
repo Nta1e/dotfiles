@@ -18,7 +18,6 @@ let
     export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
     export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
     export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
-    export GHCR_TOKEN=$(cat ${config.sops.secrets.ghcr_token.path})
   '' + lib.optionalString server ''
     export CLAUDE_CODE_OAUTH_TOKEN=$(cat ${config.sops.secrets.claude_oauth_token.path})
   '' + ''
@@ -135,14 +134,12 @@ in
       figma_token = {
         path = "${config.sops.defaultSymlinkPath}/figma_token";
       };
-      # Agent-only GitHub identity: fine-grained PAT for gh, dedicated key for git
+      # Agent GitHub identity: one classic PAT (repo, workflow, project,
+      # read:org, packages) for gh, docker login to GHCR and the org project
+      # board; fine-grained tokens cannot reach packages or org projects.
+      # Git uses the dedicated key below.
       github_token = {
         path = "${config.sops.defaultSymlinkPath}/github_token";
-      };
-      # Classic PAT, read:packages only: fine-grained tokens cannot reach GHCR,
-      # and the private odoo-base image is where `just build` starts.
-      ghcr_token = {
-        path = "${config.sops.defaultSymlinkPath}/ghcr_token";
       };
       github_ssh_key = {
         path = "${config.home.homeDirectory}/.ssh/agents_ed25519";
