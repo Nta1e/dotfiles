@@ -16,3 +16,12 @@ copy_mode  = "prefix+y"  # herdr's copy-mode entry key; copy-mode's own internal
 [ui]
 # Agents panel order: explicit choice of "spaces" (grouped by space, the default) over "priority".
 agent_panel_sort = "spaces"
+
+# No chime on every agent state change (with oldmac's crew in the sidebar that
+# was constant); a macOS banner instead, naming the pane, when one finishes or
+# needs input.
+[ui.sound]
+enabled = false
+
+[ui.toast]
+delivery = "system"
