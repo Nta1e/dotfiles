@@ -1,7 +1,7 @@
 {
   "rules": [
     {
-      "when": "Any work on the Krunchix customer mobile app: the Expo/React Native app under frontend/apps/mobile in the Krunchix/krunchix monorepo, including features, bug fixes, UI, navigation, offline behaviour, store/release work, and its shared packages when the change is for the mobile app.",
+      "when": "Hard or high-stakes Krunchix customer mobile-app work: architecture, a novel or ambiguous UI/UX flow, design-system decisions, cross-screen navigation or offline behaviour, a risky multi-file feature/refactor, release/store work, or a bug whose cause is not clear. This is the Expo/React Native app under frontend/apps/mobile in the Krunchix/krunchix monorepo, including shared packages when the change is for the app. Excludes image generation and fresh-news research requiring their dedicated tool-specific rules.",
       "use": [
         {
           "harness": "claude",
@@ -11,7 +11,8 @@
         {
           "harness": "pi",
           "model": "openai-codex/gpt-6-astra",
-          "effort": "xhigh"
+          "effort": "xhigh",
+          "provider": "codex"
         },
         {
           "harness": "claude",
@@ -19,10 +20,61 @@
           "effort": "high"
         }
       ],
-      "why": "Captain's standing rule (2026-09-16): the customer mobile app is the priority project; give it the strongest crewmate whose quota allows, Fable first, then GPT-6 Astra on the OpenAI subscription, then the latest Opus."
+      "tier_fallbacks": {
+        "exceptional": [
+          { "harness": "claude", "model": "fable", "effort": "xhigh", "provider": "claude" },
+          { "harness": "pi", "model": "openai-codex/gpt-6-astra", "effort": "high", "provider": "codex", "floor": { "scope": "all_models", "min_percent": 15 } }
+        ],
+        "difficult": [
+          { "harness": "claude", "model": "opus", "effort": "high", "provider": "claude" },
+          { "harness": "pi", "model": "openai-codex/gpt-5.5", "effort": "high", "provider": "codex", "floor": { "scope": "all_models", "min_percent": 15 } }
+        ],
+        "routine": [
+          { "harness": "claude", "model": "sonnet", "effort": "medium", "provider": "claude" },
+          { "harness": "pi", "model": "openai-codex/gpt-5.6-luna", "effort": "medium", "provider": "codex", "floor": { "scope": "all_models", "min_percent": 15 } }
+        ]
+      },
+      "why": "Local captain policy: Jev classifies demand; deterministic ordered selection prefers Claude within that tier, then its explicitly configured GPT fallback. Unknown Claude quota is disclosed but Claude is tried first, unless a hard quota veto or explicit floor prevents it. Report actual runtime errors before any fallback; authentication and network failures are not proof of exhausted quota. GPT choices are operational defaults, not empirically established equivalents. Never downgrade capability merely for quota."
     },
     {
-      "when": "The task is architecture, technical or product design, research, investigation, planning, a scout report, an audit, or any work that is genuinely open-ended and needs deep reasoning before code.",
+      "when": "Well-specified, bounded Krunchix customer mobile-app work: a localized bug with a known cause, an existing-design UI implementation, a focused screen/component change, a targeted test, or documentation. Escalate to the hard mobile-app rule when the task becomes ambiguous, cross-cutting, or visually novel. Excludes image generation and fresh-news research requiring their dedicated tool-specific rules.",
+      "use": [
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-6-astra",
+          "effort": "high",
+          "provider": "codex"
+        },
+        {
+          "harness": "claude",
+          "model": "sonnet",
+          "effort": "high"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-5.6-luna",
+          "effort": "high",
+          "provider": "codex"
+        }
+      ],
+      "tier_fallbacks": {
+        "exceptional": [
+          { "harness": "claude", "model": "fable", "effort": "xhigh", "provider": "claude" },
+          { "harness": "pi", "model": "openai-codex/gpt-6-astra", "effort": "high", "provider": "codex", "floor": { "scope": "all_models", "min_percent": 15 } }
+        ],
+        "difficult": [
+          { "harness": "claude", "model": "opus", "effort": "high", "provider": "claude" },
+          { "harness": "pi", "model": "openai-codex/gpt-5.5", "effort": "high", "provider": "codex", "floor": { "scope": "all_models", "min_percent": 15 } }
+        ],
+        "routine": [
+          { "harness": "claude", "model": "sonnet", "effort": "medium", "provider": "claude" },
+          { "harness": "pi", "model": "openai-codex/gpt-5.6-luna", "effort": "medium", "provider": "codex", "floor": { "scope": "all_models", "min_percent": 15 } }
+        ]
+      },
+      "why": "Mobile implementation follows the same Claude-first tier ladder. Jev uncertainty requires intake clarification, not an invented model choice. Preserve image-generation and other tool-specific exception rules."
+    },
+    {
+      "when": "Outside the Krunchix customer mobile app (which uses its dedicated mobile rules), the task is architecture, technical or product design, research, investigation, planning, a scout report, an audit, or any work that is genuinely open-ended and needs deep reasoning before code.",
       "use": [
         {
           "harness": "claude",
@@ -32,7 +84,8 @@
         {
           "harness": "pi",
           "model": "openai-codex/gpt-6-astra",
-          "effort": "xhigh"
+          "effort": "xhigh",
+          "provider": "codex"
         },
         {
           "harness": "claude",
@@ -48,12 +101,14 @@
         {
           "harness": "pi",
           "model": "xai/grok-4.5",
-          "effort": "high"
+          "effort": "high",
+          "provider": "grok"
         },
         {
           "harness": "pi",
           "model": "openai-codex/gpt-6-astra",
-          "effort": "high"
+          "effort": "high",
+          "provider": "codex"
         }
       ],
       "why": "Grok has the freshest web context; it runs through Pi's xai provider and needs an xAI login in Pi. Falls back to GPT-6 Astra on Pi."
@@ -68,7 +123,7 @@
       "why": "Only the OpenAI models generate images, and image generation is a Codex CLI tool rather than a Pi one, so this is the single rule that keeps the codex harness; every other GPT or Grok profile runs through Pi."
     },
     {
-      "when": "The task is a big or ambiguous multi-file feature, a risky refactor, or work that requires holding many moving parts in mind, outside the mobile app.",
+      "when": "The task is a big or ambiguous multi-file feature, a risky refactor, or work that requires holding many moving parts in mind, outside the mobile app. In the Odoo repo: a new module, a new model with its access rules, views and data, a change spanning several modules, a data migration, or POS/JS work.",
       "use": [
         {
           "harness": "claude",
@@ -78,7 +133,8 @@
         {
           "harness": "pi",
           "model": "openai-codex/gpt-6-astra",
-          "effort": "high"
+          "effort": "high",
+          "provider": "codex"
         },
         {
           "harness": "claude",
@@ -89,12 +145,13 @@
       "why": "Strong coding profile for big work, spread across both subscriptions by quota."
     },
     {
-      "when": "The task is a simple bug fix whose root cause and fix are already clear, a small well-defined change, a test addition, or a documentation update.",
+      "when": "The task is a simple bug fix whose root cause and fix are already clear, a small well-defined change, a test addition, or a documentation update. In the Odoo repo: a change inside one existing module such as a new field, a compute, a view tweak, a cron, a report column, or a test.",
       "use": [
         {
           "harness": "pi",
           "model": "openai-codex/gpt-5.6-luna",
-          "effort": "high"
+          "effort": "high",
+          "provider": "codex"
         },
         {
           "harness": "claude",
@@ -105,12 +162,30 @@
       "why": "Use more efficient models for well defined work; Luna keeps Claude quota free for the hard tasks."
     },
     {
+      "when": "The task is to run or shepherd the no-mistakes validation pipeline for an already-defined change or PR: inspect its status and output, drive routine validation gates, and report the result. Escalate a product or design decision rather than spending a premium model deciding it.",
+      "use": [
+        {
+          "harness": "pi",
+          "model": "openai-codex/gpt-5.6-luna",
+          "effort": "high",
+          "provider": "codex"
+        },
+        {
+          "harness": "claude",
+          "model": "sonnet",
+          "effort": "medium"
+        }
+      ],
+      "why": "Validation is command, test, lint, and CI heavy rather than a primary design task. Luna is the efficient default; Sonnet is available when a failure needs diagnosis."
+    },
+    {
       "when": "The task is a trivial mechanical edit such as a rote rename, formatting sweep, targeted typo fix, dependency bump with green CI, or simple file gathering.",
       "use": [
         {
           "harness": "pi",
           "model": "openai-codex/gpt-5.6-luna",
-          "effort": "medium"
+          "effort": "medium",
+          "provider": "codex"
         },
         {
           "harness": "claude",
@@ -124,17 +199,18 @@
   "default": [
     {
       "harness": "claude",
-      "model": "opus",
+      "model": "sonnet",
       "effort": "high"
     },
     {
       "harness": "pi",
       "model": "openai-codex/gpt-5.6-terra",
-      "effort": "high"
+      "effort": "high",
+      "provider": "codex"
     },
     {
       "harness": "claude",
-      "model": "sonnet",
+      "model": "opus",
       "effort": "high"
     }
   ]
