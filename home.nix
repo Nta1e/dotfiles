@@ -536,9 +536,13 @@ in
   # emulator (Xcode lives on this Mac). Public key only; Remote Login must be
   # on (System Settings > General > Sharing) and sshd is keys-only via
   # configuration.nix.
-  home.file.".ssh/authorized_keys" = lib.mkIf (!server) {
-    text = builtins.readFile ./home/ssh/oldmac.pub;
-  };
+  # A real file, not a store symlink: sshd's StrictModes rejects a key file
+  # the user does not own.
+  home.activation.authorizedKeys = lib.mkIf (!server) (lib.hm.dag.entryAfter ["writeBoundary"] ''
+    f=${config.home.homeDirectory}/.ssh/authorized_keys
+    [ -L "$f" ] && rm "$f"
+    install -m 600 ${./home/ssh/oldmac.pub} "$f"
+  '');
 
   # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
   home.file.".config/wezterm".source =
