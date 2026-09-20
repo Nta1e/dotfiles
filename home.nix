@@ -128,10 +128,13 @@ let
   };
 
   # Docker: dangling images, stopped containers, build cache, anonymous volumes
-  # (named volumes kept; skipped if colima is down). Then `mo clean`, which
-  # prompts for sudo from a terminal but stays user-level under launchd.
+  # (named volumes kept; skipped if colima is down). Then `mo clean`.
+  # mole calls bare `sudo` (sudo test/rm/find on system paths), and with
+  # Touch ID sudo + reattach that pops a password dialog on screen even from
+  # a launchd job. A failing sudo shim keeps it strictly user-level.
+  noSudo = pkgs.writeShellScriptBin "sudo" "exit 1";
   cleanup = pkgs.writeShellScript "cleanup" ''
-    export PATH="${brewPrefix}/bin:/etc/profiles/per-user/${config.home.username}/bin:/run/current-system/sw/bin:/usr/bin:/bin"
+    export PATH="${noSudo}/bin:${brewPrefix}/bin:/etc/profiles/per-user/${config.home.username}/bin:/run/current-system/sw/bin:/usr/bin:/bin"
     export DOCKER_HOST="unix://${config.home.homeDirectory}/.colima/default/docker.sock"
     echo "== $(date)"
     if [ -S "${config.home.homeDirectory}/.colima/default/docker.sock" ]; then
