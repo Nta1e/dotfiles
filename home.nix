@@ -532,6 +532,14 @@ in
   ];
 
 
+  # oldmac's firstmate crew ssh in here to drive the iOS Simulator and Android
+  # emulator (Xcode lives on this Mac). Public key only; Remote Login must be
+  # on (System Settings > General > Sharing) and sshd is keys-only via
+  # configuration.nix.
+  home.file.".ssh/authorized_keys" = lib.mkIf (!server) {
+    text = builtins.readFile ./home/ssh/oldmac.pub;
+  };
+
   # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
   home.file.".config/wezterm".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
