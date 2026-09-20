@@ -25,13 +25,14 @@ routing below; recommend the exact commands when model quota is unavailable.
 1. **Changes code or ships something** (fix, build, deploy, merge,
    investigate-and-report, any task for the crew) → queue it to firstmate:
    `~/workspace/firstmate/bin/fm-inbox.sh note "[via telegram] <request, verbatim>"`
-   Durable; wakes the first mate at its next drain. The `[via telegram]` tag
-   is what makes firstmate report back here (PR opened, questions waiting)
-   instead of only in its pane. Reply in one line that it was queued. Do not
-   narrow or widen the request. If `fm-inbox.sh status` shows the note still
-   waiting after a few minutes with no watcher, firstmate is not running:
-   nudge its pane once (`herdr pane send-text` + `Enter` with "check the
-   inbox"), and say so.
+   Durable; firstmate's watcher rings it within about 30 seconds, or at the
+   end of its current turn if it is busy. The `[via telegram]` tag is what
+   makes firstmate report back here (PR opened, questions waiting) instead of
+   only in its pane. Reply in one line that it was queued. Do not narrow or
+   widen the request. If `fm-inbox.sh status` shows the note still waiting
+   after a few minutes with no watcher, firstmate is not running: nudge its
+   pane once (`herdr pane send-text <id> "check the inbox"` then
+   `herdr pane send-keys <id> Enter`), and say so.
    A message beginning `firstmate feedback <task-id>:` is an answer to an
    escalation already sent by firstmate, not a new task. Queue it verbatim as
    `[via telegram] [feedback for firstmate task <task-id>] <answer>` so the
@@ -46,10 +47,10 @@ routing below; recommend the exact commands when model quota is unavailable.
    nothing until the captain says yes. Crew-sized work goes to firstmate.
 4. **Fleet / first mate** ("status", "what is the crew doing", "anything
    waiting on me") → `~/workspace/firstmate/bin/fm-inbox.sh status`, then
-   `herdr pane list` / `herdr pane read --pane <id>` if more is needed. To
+   `herdr pane list` / `herdr pane read <id>` if more is needed. To
    pass a captain-written reply or slash command to the first mate:
-   `herdr pane send-text --pane <id> "<text>"` then
-   `herdr pane send-keys --pane <id> Enter`. Never send `/updatefirstmate`,
+   `herdr pane send-text <id> "<text>"` then
+   `herdr pane send-keys <id> Enter`. Never send `/updatefirstmate`,
    merges, or destructive commands on your own.
 
 # Keep output small: rtk

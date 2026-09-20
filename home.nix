@@ -52,6 +52,20 @@ let
       --data-urlencode "disable_web_page_preview=true"
   '';
 
+  # Doorbell for captain inbox notes. `fm-inbox.sh note` only appends a wake
+  # row that drains at firstmate's next turn boundary, and its watcher never
+  # looks at that queue, so an idle firstmate sat on Telegram notes for hours.
+  # Registered as a watcher state check (state/inbox.check.sh, hash-bound by
+  # fm-check-register.sh): any undrained inbox row becomes a `check:` wake on
+  # the FM_CHECK_INTERVAL cadence, and draining removes the rows, so it stops
+  # ringing by itself. The same contract the mail poll and Relay use.
+  fmInboxCheck = pkgs.writeShellScript "inbox.check.sh" ''
+    queue=${config.home.homeDirectory}/workspace/firstmate/state/.wake-queue
+    n=$(${pkgs.gawk}/bin/awk -F'\t' '$3 == "check" && $4 ~ /^inbox:/' "$queue" 2>/dev/null | wc -l | tr -d ' ')
+    [ "''${n:-0}" -gt 0 ] && echo "captain inbox: $n undrained note(s)"
+    exit 0
+  '';
+
   colimaDaemon = pkgs.writeShellScriptBin "colima-daemon" ''
     colima=${config.home.profileDirectory}/bin/colima
     # `start --foreground` exits at once if colima was started by hand,
@@ -403,6 +417,11 @@ in
   } // lib.optionalAttrs server {
     # firstmate keeps its own memory (data/captain.md, data/learnings.md)
     CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+    # Watcher slow-check cadence (default 300s): the captain inbox doorbell
+    # above rings on this clock, and 5 minutes is not "swift" from a phone.
+    # Relay mode runs the same 30s. Read at watcher start: a running Pi
+    # session must be restarted to pick it up.
+    FM_CHECK_INTERVAL = "30";
   };
 
   home.shellAliases = {
@@ -618,6 +637,17 @@ in
       done
     fi
   '';
+
+  home.activation.firstmateInboxCheck = lib.mkIf server (lib.hm.dag.entryAfter ["firstmateSeed"] ''
+    fm=${config.home.homeDirectory}/workspace/firstmate
+    if [ -x "$fm/bin/fm-check-register.sh" ] \
+      && ! ${pkgs.diffutils}/bin/cmp -s ${fmInboxCheck} "$fm/state/inbox.check.sh" 2>/dev/null; then
+      mkdir -p "$fm/state"
+      install -m 700 ${fmInboxCheck} "$fm/state/inbox.check.sh"
+      (cd "$fm" && bin/fm-check-register.sh inbox) \
+        || echo "firstmate: inbox check registration failed" >&2
+    fi
+  '');
 
   # World-writable: the container's `hermes` uid is not ours on the virtiofs
   # mount, and the only thing in here is chat attachments.
