@@ -26,9 +26,11 @@
    enable = true;
    taps = [
      "my-monkeys/tap"
+     "android-platform-tools"
    ];
    casks = [
      "wezterm"
+     "temurin@17"
      "claude-code"
      "tailscale-app"
      "my-monkeys/tap/opensuperwhisper"
