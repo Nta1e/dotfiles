@@ -52,6 +52,9 @@ echo "==> ops profile (Mattermost)"
 run sh -c 'hermes profile list 2>/dev/null | grep -q "^ *ops\b" || hermes profile create --no-alias ops'
 ops() { run hermes -p ops "$@"; }
 run sh -c 'ln -sfn /opt/dotfiles-hermes/ops/SOUL.md /opt/data/profiles/ops/SOUL.md'
+# Ops skills live in dotfiles too; linked into the profile's skill tree so
+# the skills tool indexes them next to the bundled ones.
+run sh -c 'mkdir -p /opt/data/profiles/ops/skills/operations && for s in /opt/dotfiles-hermes/ops/skills/*/; do ln -sfn "${s%/}" "/opt/data/profiles/ops/skills/operations/$(basename "$s")"; done'
 # A named profile only reads its own .env, never the container env: that is
 # what keeps the Telegram token out of the ops bot and vice versa.
 merge_env /opt/data/profiles/ops/.env < "$HOME/.hermes/env-ops"
@@ -59,9 +62,12 @@ merge_env /opt/data/profiles/ops/.env < "$HOME/.hermes/env-ops"
 # so a PDF a captain posts is readable by kx on the host (~/.hermes/ops-documents).
 run sh -c 'mkdir -p /opt/data/profiles/ops/cache && rm -rf /opt/data/profiles/ops/cache/documents && ln -sfn /opt/host-documents /opt/data/profiles/ops/cache/documents'
 ops config set terminal.backend ssh
-ops config set model.provider anthropic
-# Sonnet for the money work; the Telegram liaison stays on Haiku.
-ops config set model.default claude-sonnet-5
+# The money work runs on GPT-5.5 through the Codex subscription (the Claude
+# quota is kept for the crew); the Telegram liaison stays on Haiku. Picking
+# the provider once with `hermes -p ops model` also records its base_url,
+# which `config set` alone does not.
+ops config set model.provider openai-codex
+ops config set model.default gpt-5.5
 ops config set agent.max_turns 40
 # No "terminal..." bubbles in the thread; the persona narrates instead.
 ops config set display.platforms.mattermost.tool_progress off

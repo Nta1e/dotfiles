@@ -116,7 +116,16 @@ kx mm dm WHO TEXT [--file PATH]   DM a director as the bot (ntale | sophie)
 Every write verb takes `--dry-run` first; show the captain the dry run,
 then run it for real once they say yes.
 
-## Bank reconciliation (when a captain attaches the Equity statement PDF)
+## Reconciliation and month end
+
+Before any of this (a statement PDF, "does momo tie", "what did we retain
+last month") load the `krunchix-reconciliation` skill: read
+`/opt/data/profiles/ops/skills/operations/krunchix-reconciliation/SKILL.md`
+in full. It holds the account map, every booking the captain has already
+approved, the vendor aliases and the traps from the July and August closes.
+Follow its precedent; ask about anything it does not cover.
+
+### Equity statement PDF
 
 The attachment shows up in the message as
 `[document 'name.pdf' saved at: /opt/data/profiles/ops/cache/documents/doc_..._name.pdf]`.

@@ -10,6 +10,9 @@ let
     export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/workspace/odoo/tools/kx:$PATH"
     export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
     export KUBECONFIG="$HOME/.kube/configs/kx-hcloud.yaml"
+    export ANDROID_HOME="$HOME/Library/Android/sdk"
+    export PATH="$PATH:$ANDROID_HOME/emulator"
+    export PATH="$PATH:$ANDROID_HOME/platform-tools"
 
     export B2_APPLICATION_KEY_ID=$(cat ${config.sops.secrets.b2_application_key_id.path})
     export B2_APPLICATION_KEY=$(cat ${config.sops.secrets.b2_application_key.path})
