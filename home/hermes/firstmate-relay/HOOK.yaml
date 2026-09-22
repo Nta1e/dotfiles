@@ -1,0 +1,5 @@
+name: firstmate-relay
+description: Authenticated model-free delivery of Firstmate command replies over SSH.
+events:
+  - command:fmreply
+  - command:fmstatus

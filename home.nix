@@ -21,9 +21,10 @@ let
     export HCLOUD_TOKEN=$(cat ${config.sops.secrets.h_cloud_token.path})
     export FIGMA_TOKEN=$(cat ${config.sops.secrets.figma_token.path})
     export GH_TOKEN=$(cat ${config.sops.secrets.github_token.path})
-  '' + lib.optionalString server ''
-    export CLAUDE_CODE_OAUTH_TOKEN=$(cat ${config.sops.secrets.claude_oauth_token.path})
-  '' + ''
+    # Interactive Claude and quota readers share the CLI-owned, refreshable
+    # Keychain login. Service tokens belong only in their service environments.
+    # Unset also clears an override inherited from an older terminal server.
+    unset CLAUDE_CODE_OAUTH_TOKEN
     export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
   '';
 
@@ -188,8 +189,8 @@ in
         path = "${config.home.homeDirectory}/.ssh/agents_ed25519";
         mode = "0600";
       };
-      # `claude setup-token`: long-lived, used headless on the server instead of
-      # the Keychain login so the agents never wait on a relogin
+      # `claude setup-token`: service-only credential for Hermes. Do not export
+      # into interactive shells: it masks the refreshable Claude Keychain login.
       claude_oauth_token = {
         path = "${config.sops.defaultSymlinkPath}/claude_oauth_token";
       };
@@ -585,6 +586,10 @@ in
   home.file.".pi/agent/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
 
+
+  # Keep quota reads on the refreshable login even in old service-token shells.
+  home.file.".local/bin/quota-axi".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/claude-auth/quota-axi";
 
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";

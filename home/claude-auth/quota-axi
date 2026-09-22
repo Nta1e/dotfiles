@@ -1,0 +1,5 @@
+#!/bin/sh
+# Quota reads use the interactive Claude login, even from an older agent or
+# terminal server that still carries the service-only setup token.
+unset CLAUDE_CODE_OAUTH_TOKEN
+exec "$HOME/.npm-global/bin/quota-axi" "$@"

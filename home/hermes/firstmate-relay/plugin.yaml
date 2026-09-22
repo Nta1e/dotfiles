@@ -1,0 +1,5 @@
+name: firstmate-relay
+version: 1.0.0
+description: Authenticated model-free Firstmate commands, before agent dispatch even when Hermes is busy.
+hooks:
+  - pre_gateway_dispatch
