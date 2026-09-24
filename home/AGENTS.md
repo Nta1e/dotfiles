@@ -1,5 +1,12 @@
 # global agent instructions
 
+- NEVER write unit tests after you write code.
+- Tautological tests considered harmful.
+- Change-detector tests considered harmful.
+- Do not create regression tests for bug fixes without a genuine gap in behavior testing. 
+- Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work. At the end of E2E tests, produce a verifiable and repeatable artifact. 
+- If you must test a system in isolation, FIRST write all the ways it could fail, THEN write the code.
+- 
 - Never use the em dash "—". Use plain dash "-" instead
 - When writing commit messages, NEVER auto-add your agent name as co-author
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
