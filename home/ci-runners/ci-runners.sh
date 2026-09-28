@@ -8,14 +8,20 @@
 # containers, so a job's `docker run -v /tmp/x:...` or `-v $PWD:...` names the
 # same files the job sees, as it would on a GitHub-hosted runner.
 # A slot runs exactly one job, then both containers and their volumes are
-# thrown away, so every job starts from a clean runner and an empty dockerd.
+# thrown away, so every job starts from a clean runner. Only the slot's image
+# store and build cache survive: a job starts with no containers, networks, or
+# volumes, but does not re-download the Odoo base or Postgres over the home
+# uplink (that alone took Odoo test shards from ~1 to ~5 minutes of setup).
 
 org=Krunchix
 app_id=5104929
 installation_id=165688469
 key="$HOME/.config/sops-nix/secrets/ci_github_app_private_key"
 label=oldmac-linux
-slots=2
+slots=4
+# Past this the slot's store is wiped whole: images carry no last-used time
+# to prune by, and a cold rebuild is cheaper than filling the colima disk.
+store_cap_gb=20
 runner_image=ghcr.io/actions/actions-runner:latest
 dind_image=docker:dind
 
@@ -45,21 +51,32 @@ cleanup_slot() {
 }
 
 start_dind() {
-  local n=$1 _
+  local n=$1 _ used_kb
   # --group=123 is the docker group and 1001 the runner user in the runner
   # image, so the runner can use the socket and its fresh work volume.
   # oom-score-adj 500 makes the VM kill CI before Hermes.
   docker run -d --name "ci-$n-dind" --privileged --memory 4g --oom-score-adj 500 \
     -v "ci-$n-sock:/var/run" -v "ci-$n-tmp:/tmp" -v "ci-$n-work:/home/runner/_work" \
+    -v "ci-$n-docker:/var/lib/docker" \
     --entrypoint sh "$dind_image" -c \
     'chown 1001:1001 /home/runner/_work &&
      exec dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock --group=123' \
     >/dev/null || return 1
   for _ in $(seq 60); do
-    docker exec "ci-$n-dind" docker info >/dev/null 2>&1 && return 0
+    docker exec "ci-$n-dind" docker info >/dev/null 2>&1 && break
     sleep 2
   done
-  return 1
+  docker exec "ci-$n-dind" docker info >/dev/null 2>&1 || return 1
+  # Whatever a crashed or cancelled job left behind goes; images stay.
+  docker exec "ci-$n-dind" sh -c '
+    docker ps -aq | xargs -r docker rm -f
+    docker network prune -f
+    docker volume prune -af' >/dev/null || return 1
+  used_kb=$(docker exec "ci-$n-dind" du -sk /var/lib/docker | cut -f1) || return 1
+  if [ "$used_kb" -gt $((store_cap_gb * 1024 * 1024)) ]; then
+    echo "slot $n: store at $((used_kb / 1024 / 1024))G, wiping it" >&2
+    docker exec "ci-$n-dind" docker system prune -af --volumes >/dev/null || return 1
+  fi
 }
 
 # The script runs under errexit, so every docker call in the loop must be
