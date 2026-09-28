@@ -26,12 +26,11 @@
    enable = true;
    taps = [
      "my-monkeys/tap"
-     "android-platform-tools"
    ];
    casks = [
      "wezterm"
      "temurin@17"
-     "claude-code"
+     "claude-code@latest"
      "tailscale-app"
      "my-monkeys/tap/opensuperwhisper"
    ];
@@ -74,9 +73,12 @@
     user = "ntaleshadik";
     home = "/Users/${user}";
     bin = "/etc/profiles/per-user/${user}/bin";
+    # `command` (not ProgramArguments) makes nix-darwin wrap the exec in
+    # /bin/wait4path /nix/store: at boot launchd can spawn these before the
+    # Nix volume mounts, and the failed exec (EX_CONFIG) is never retried.
     daemon = name: log: {
+      command = "${bin}/${name}";
       serviceConfig = {
-        ProgramArguments = [ "${bin}/${name}" ];
         UserName = user;
         GroupName = "staff";
         WorkingDirectory = home;
@@ -93,6 +95,7 @@
   in lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
     colima = daemon "colima-daemon" "colima.log";
     hermes = daemon "hermes-gateway" "hermes.log";
+    ci-runners = daemon "ci-runners" "ci-runners.log";
   };
 
   # Remote Login: keys only. Make sure `ssh <host>` works without a password

@@ -70,6 +70,42 @@ let
     exit 0
   '';
 
+  # Independent liveness guard for firstmate's own watcher (bin/fm-watch.sh).
+  # The in-session Stop-hook auto-arm can only re-arm on the coordinator's next
+  # turn, but nothing generates that turn once the watcher is already dead -
+  # it sat down silently for ~30 minutes once per bin/fm-watch-arm.sh's own
+  # header, then for ~47 minutes on 2026-09-23. This runs that script exactly
+  # the way its header requires (a standalone tracked process, never `&`,
+  # which is how it died last time): under launchd KeepAlive it attaches
+  # silently to an already-healthy watcher, or starts one when none exists.
+  #
+  # A self-started watcher that finds an already-actionable wake (e.g. a
+  # decision resurfacing from the downtime) reports it and exits immediately -
+  # this script does not read or act on that reason, only the coordinator's
+  # own hook can, so an unresolved wake would otherwise make KeepAlive re-fire
+  # every few seconds forever. launchd's ThrottleInterval below floors the
+  # restart rate; token-based dedup here keeps a single stuck incident from
+  # re-paging the captain on every one of those throttled retries.
+  firstmateWatchdog = pkgs.writeShellScriptBin "firstmate-watchdog" ''
+    set -u
+    fm=${config.home.homeDirectory}/workspace/firstmate
+    [ -x "$fm/bin/fm-watch-arm.sh" ] || { echo "firstmate-watchdog: no checkout at $fm yet" >&2; sleep 30; exit 1; }
+    beat="$fm/state/.last-watcher-beat"
+    lastAlerted="$fm/state/.watchdog-last-alerted-token"
+    mtime=$(/usr/bin/stat -f %m "$beat" 2>/dev/null || echo 0)
+    age=$(( $(date +%s) - mtime ))
+    if [ "$age" -gt 300 ]; then
+      token=$(cat "$fm/state/.watcher-down" 2>/dev/null || echo none)
+      prev=$(cat "$lastAlerted" 2>/dev/null || echo "")
+      if [ "$token" != "$prev" ]; then
+        ${fmTg}/bin/fm-tg "firstmate watcher beacon was stale (''${age}s) - watchdog is re-arming it now." || true
+        printf '%s' "$token" > "$lastAlerted" 2>/dev/null || true
+      fi
+    fi
+    cd "$fm"
+    exec bin/fm-watch-arm.sh
+  '';
+
   colimaDaemon = pkgs.writeShellScriptBin "colima-daemon" ''
     colima=${config.home.profileDirectory}/bin/colima
     # `start --foreground` exits at once if colima was started by hand,
@@ -79,7 +115,9 @@ let
       while $colima status >/dev/null 2>&1; do sleep 30; done
       exit 1
     fi
-    exec $colima start --foreground
+    # CI runners share this VM with Hermes (home/ci-runners), so size it here:
+    # flags win over the unmanaged ~/.colima/default/colima.yaml.
+    exec $colima start --foreground --cpu 8 --memory 16
   '';
 
   # Hermes runs in docker: upstream does not support macOS on Intel natively.
@@ -92,6 +130,15 @@ let
     until [ -r ${config.home.homeDirectory}/.hermes/env ]; do sleep 5; done
     exec ${pkgs.docker-compose}/bin/docker-compose -f ${hermesCompose} up --no-color
   '';
+
+  # Krunchix GitHub Actions runners (label oldmac-linux) in colima; see the
+  # script header. Moved here from the Hetzner cluster so CI bursts never
+  # compete with production pods.
+  ciRunners = pkgs.writeShellApplication {
+    name = "ci-runners";
+    runtimeInputs = [ pkgs.docker pkgs.curl pkgs.jq pkgs.openssl pkgs.coreutils ];
+    text = builtins.readFile ./home/ci-runners/ci-runners.sh;
+  };
 
   # Named volume for /opt/data: a bind mount over virtiofs breaks sqlite WAL
   # and uid ownership. home/hermes is bind-mounted as a directory (a single-file
@@ -198,9 +245,14 @@ in
         path = "${config.home.homeDirectory}/.kube/configs/kx-hcloud.yaml";
       };
       # typesafe.ai (Jev): firstmate's typed dispatch resolver
-      typesafe_api_key = { };
+      typesafe_api_key = {
+        path = "${config.sops.defaultSymlinkPath}/typesafe_api_key";
+      };
+  
     } // lib.optionalAttrs server {
       # Hermes gateway (Telegram -> firstmate); see home/hermes/README.md
+      # GitHub App (org self-hosted runners: read & write) for home/ci-runners
+      ci_github_app_private_key = { };
       telegram_bot_token = { };
       telegram_allowed_users = { };
       hermes_ssh_key = { };
@@ -555,6 +607,7 @@ in
     fmTg
     colimaDaemon
     hermesGateway
+    ciRunners
   ];
 
 
@@ -595,6 +648,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  home.file.".pi/agent/AGENTS.md".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
 
   # Claude Code skills, pinned through the flake inputs so every Mac runs the
   # same version. Each is a directory holding SKILL.md.
@@ -623,7 +678,30 @@ in
       KeepAlive = true;
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
       StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/herdr-server.log";
-      EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:${brewPrefix}/bin:/usr/local/bin:/usr/bin:/bin";
+      EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:${brewPrefix}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+    };
+  };
+
+  # Keeps bin/fm-watch-arm.sh permanently attached/running so the watcher
+  # process can never again sit dead unnoticed - see firstmateWatchdog above.
+  # Server-only like firstmateInboxCheck: this is where firstmate's coordinator
+  # and its Telegram relay actually live.
+  #
+  # ThrottleInterval floors the restart rate at once per 300s: a healthy,
+  # long-attached run never hits it (it only exits when its cycle genuinely
+  # ends), but a watcher that keeps handing back an immediately-actionable
+  # wake - which this script cannot consume itself - would otherwise make
+  # KeepAlive restart it every few seconds.
+  launchd.agents.firstmate-watchdog = lib.mkIf server {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${firstmateWatchdog}/bin/firstmate-watchdog" ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 300;
+      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/firstmate-watchdog.log";
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/firstmate-watchdog.log";
+      EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:${brewPrefix}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
     };
   };
 
