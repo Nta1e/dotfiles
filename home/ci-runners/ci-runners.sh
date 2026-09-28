@@ -4,6 +4,9 @@
 # plus an ephemeral actions-runner container sharing its network namespace.
 # Jobs therefore get their own dockerd for service containers (Backend's
 # Postgres on localhost:5432) without two slots fighting over host ports.
+# /tmp and the work dir are shared volumes mounted at the same paths in both
+# containers, so a job's `docker run -v /tmp/x:...` or `-v $PWD:...` names the
+# same files the job sees, as it would on a GitHub-hosted runner.
 # A slot runs exactly one job, then both containers and their volumes are
 # thrown away, so every job starts from a clean runner and an empty dockerd.
 
@@ -38,16 +41,20 @@ registration_token() {
 
 cleanup_slot() {
   docker rm -f "ci-$1-runner" "ci-$1-dind" >/dev/null 2>&1 || true
-  docker volume rm "ci-$1-sock" >/dev/null 2>&1 || true
+  docker volume rm "ci-$1-sock" "ci-$1-tmp" "ci-$1-work" >/dev/null 2>&1 || true
 }
 
 start_dind() {
   local n=$1 _
-  # --group=123 is the docker group in the runner image, so the runner user
-  # can use the socket. oom-score-adj 500 makes the VM kill CI before Hermes.
+  # --group=123 is the docker group and 1001 the runner user in the runner
+  # image, so the runner can use the socket and its fresh work volume.
+  # oom-score-adj 500 makes the VM kill CI before Hermes.
   docker run -d --name "ci-$n-dind" --privileged --memory 4g --oom-score-adj 500 \
-    -v "ci-$n-sock:/var/run" \
-    "$dind_image" dockerd --host=unix:///var/run/docker.sock --group=123 >/dev/null || return 1
+    -v "ci-$n-sock:/var/run" -v "ci-$n-tmp:/tmp" -v "ci-$n-work:/home/runner/_work" \
+    --entrypoint sh "$dind_image" -c \
+    'chown 1001:1001 /home/runner/_work &&
+     exec dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock --group=123' \
+    >/dev/null || return 1
   for _ in $(seq 60); do
     docker exec "ci-$n-dind" docker info >/dev/null 2>&1 && return 0
     sleep 2
@@ -75,7 +82,8 @@ run_slot() {
     fi
     docker run --rm --name "ci-$n-runner" --network "container:ci-$n-dind" \
       --memory 8g --oom-score-adj 500 \
-      -v "ci-$n-sock:/var/run" -e DOCKER_HOST=unix:///var/run/docker.sock \
+      -v "ci-$n-sock:/var/run" -v "ci-$n-tmp:/tmp" -v "ci-$n-work:/home/runner/_work" \
+      -e DOCKER_HOST=unix:///var/run/docker.sock \
       "$runner_image" bash -c \
       "./config.sh --unattended --ephemeral --disableupdate --url https://github.com/$org \
          --token $token --name oldmac-$n-\$(date +%s) --labels $label && ./run.sh" \
