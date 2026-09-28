@@ -73,11 +73,16 @@
     user = "ntaleshadik";
     home = "/Users/${user}";
     bin = "/etc/profiles/per-user/${user}/bin";
+    # The store path, not the stable profile link: a changed script then
+    # changes the plist, which is what makes a switch reload the daemon.
+    script = name: lib.getExe (lib.findFirst (p: (p.pname or p.name) == name)
+      (throw "no ${name} in the ${user} home packages")
+      config.home-manager.users.${user}.home.packages);
     # `command` (not ProgramArguments) makes nix-darwin wrap the exec in
     # /bin/wait4path /nix/store: at boot launchd can spawn these before the
     # Nix volume mounts, and the failed exec (EX_CONFIG) is never retried.
     daemon = name: log: {
-      command = "${bin}/${name}";
+      command = script name;
       serviceConfig = {
         UserName = user;
         GroupName = "staff";
