@@ -115,9 +115,10 @@ let
       while $colima status >/dev/null 2>&1; do sleep 30; done
       exit 1
     fi
-    # CI runners share this VM with Hermes (home/ci-runners), so size it here:
-    # flags win over the unmanaged ~/.colima/default/colima.yaml.
-    exec $colima start --foreground --cpu 8 --memory 16
+    # Sized for Hermes alone (~400 MiB): the VM holds its whole allocation as
+    # guest page cache, so 16 GiB here pushed the 32 GB host into swap. Flags
+    # win over the unmanaged ~/.colima/default/colima.yaml.
+    exec $colima start --foreground --cpu 2 --memory 3
   '';
 
   # Hermes runs in docker: upstream does not support macOS on Intel natively.
@@ -293,7 +294,6 @@ in
       path = "${config.home.homeDirectory}/.hermes/env-ops";
       content = ''
         MATTERMOST_URL=https://chat.krunchix.cafe
-        MATTERMOST_TOKEN=${config.sops.placeholder.mattermost_bot_token}
         MATTERMOST_ALLOWED_USERS=${config.sops.placeholder.mattermost_ops_users}
         MATTERMOST_REPLY_MODE=thread
         MATTERMOST_REQUIRE_MENTION=true
@@ -702,6 +702,21 @@ in
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/firstmate-watchdog.log";
       StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/firstmate-watchdog.log";
       EnvironmentVariables.PATH = "${config.home.profileDirectory}/bin:${brewPrefix}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+    };
+  };
+
+  # mise: the Mattermost ops bot, a long-lived Claude Code session in a herdr
+  # pane (home/mise). The script loops, restarting the session whenever the
+  # agent is gone.
+  launchd.agents.mise = lib.mkIf server {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${config.home.homeDirectory}/dotfiles/home/mise/mise-session.sh" ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 60;
+      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/mise.log";
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/mise.log";
     };
   };
 

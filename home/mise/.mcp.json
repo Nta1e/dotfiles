@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "mattermost": {
+      "command": "node",
+      "args": ["${HOME}/dotfiles/home/mise/channel/mattermost.mjs"],
+      "env": {
+        "MATTERMOST_URL": "https://chat.krunchix.cafe",
+        "MATTERMOST_TOKEN_FILE": "${HOME}/.config/sops-nix/secrets/mattermost_bot_token",
+        "MATTERMOST_ALLOWED_USERS": "7bmatp8t7bfhpecz5up5rmsocy,9hkasyp5ntdtzgmk4qs13btomw",
+        "MATTERMOST_DIRECTORS": "{\"ntale\": \"7bmatp8t7bfhpecz5up5rmsocy\", \"sophie\": \"9hkasyp5ntdtzgmk4qs13btomw\"}",
+        "MATTERMOST_PRIVATE_CHANNELS": "bx8cps71sfriucrcswcmc3fixe",
+        "MISE_INBOX": "${HOME}/dotfiles/home/mise/inbox",
+        "MISE_STT_COMMAND": "hermes-stt"
+      }
+    }
+  }
+}

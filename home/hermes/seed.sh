@@ -52,6 +52,14 @@ echo "==> ops profile (Mattermost)"
 run sh -c 'hermes profile list 2>/dev/null | grep -q "^ *ops\b" || hermes profile create --no-alias ops'
 ops() { run hermes -p ops "$@"; }
 run sh -c 'ln -sfn /opt/dotfiles-hermes/ops/SOUL.md /opt/data/profiles/ops/SOUL.md'
+# The multiplexed gateway runs one plugin discovery, which may resolve under
+# the ops profile, so the Firstmate relay is linked and enabled in both or
+# /fmreply and /fmstatus come back "Unrecognized slash command".
+for home in /opt/data /opt/data/profiles/ops; do
+  run sh -c "mkdir -p $home/plugins $home/hooks && ln -sfn /opt/dotfiles-hermes/firstmate-relay $home/plugins/firstmate-relay && ln -sfn /opt/dotfiles-hermes/firstmate-relay $home/hooks/firstmate-relay"
+done
+run hermes plugins enable firstmate-relay
+ops plugins enable firstmate-relay
 # Ops skills live in dotfiles too; linked into the profile's skill tree so
 # the skills tool indexes them next to the bundled ones.
 run sh -c 'mkdir -p /opt/data/profiles/ops/skills/operations && for s in /opt/dotfiles-hermes/ops/skills/*/; do ln -sfn "${s%/}" "/opt/data/profiles/ops/skills/operations/$(basename "$s")"; done'

@@ -100,7 +100,6 @@
   in lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
     colima = daemon "colima-daemon" "colima.log";
     hermes = daemon "hermes-gateway" "hermes.log";
-    ci-runners = daemon "ci-runners" "ci-runners.log";
   };
 
   # Remote Login: keys only. Make sure `ssh <host>` works without a password
