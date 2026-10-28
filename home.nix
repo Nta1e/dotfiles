@@ -573,6 +573,7 @@ in
     # Secrets management
     age
     sops
+    openbao
 
     docker
     docker-compose
